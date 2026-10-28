@@ -1,0 +1,13 @@
+{
+  "name": "novale",
+  "version": "1.0.0",
+  "description": "Write it down, let it rest, grow what holds. An idea notebook that makes ideas rest before you start them.",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs"
+  },
+  "devDependencies": {
+    "jsdom": "24.1.3"
+  }
+}

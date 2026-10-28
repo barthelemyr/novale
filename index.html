@@ -1,0 +1,1192 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Novale: an idea notebook that makes ideas rest before you start them. Write it down, let it rest, grow what holds.">
+<meta name="theme-color" content="#FFFFFF">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Novale">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Novale</title>
+<style>
+/* Layout : application d'un seul écran. En-tête, saisie sur une ligne, onglets par étape du cycle et filtres ; en dessous, la liste à gauche et la fiche (ou « Aujourd'hui ») à droite. Sur téléphone, la fiche s'ouvre en plein écran. Seules la liste et la fiche défilent. */
+:root{
+  --bg:#FFFFFF; --ink:#0B0B0B; --muted:#6A6663; --hair:#E4E1DE; --line:#CFCBC7; --fill:#E9E6E3; --soft:#F5F4F2; --red:#E2231A; --red-ink:#C21C14;
+  --f:"Helvetica Neue","Helvetica","Inter Tight","Arial",sans-serif;
+  --s1:12px; --s2:15px; --s3:17px; --s4:22px; --s5:28px;
+  --gl:max(16px,env(safe-area-inset-left,0px)); --gr:max(16px,env(safe-area-inset-right,0px));
+  color-scheme:light;
+}
+:root,:root[data-theme="dark"]{color-scheme:light}
+*{box-sizing:border-box}
+html,body{height:100%;background:var(--bg)}
+body{color:var(--ink);font-family:var(--f);font-size:var(--s2);line-height:1.45;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums;margin:0;display:flex;flex-direction:column;overflow:hidden}
+button,input,textarea,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.muted{color:var(--muted)}
+.lab{font-size:var(--s1);font-weight:600;letter-spacing:.07em;text-transform:uppercase}
+h1,h2,h3{margin:0;line-height:1.05;text-wrap:balance;letter-spacing:-.01em}
+.inner{width:100%;max-width:1360px;margin:0 auto;padding-left:var(--gl);padding-right:var(--gr)}
+.band{flex:none}
+
+/* Marqueurs du cycle */
+.mk{display:inline-block;width:10px;height:10px;flex-shrink:0}
+.mk-j{border:1.5px solid var(--red)}
+.mk-due{background:var(--red)}
+.mk-p{border:1.5px solid var(--red);background:linear-gradient(var(--red),var(--red)) center/4px 4px no-repeat}
+.mk-c{background:var(--fill);border:1px solid var(--muted);box-shadow:inset 0 -2px 0 var(--muted)}
+.mk-r{background:var(--ink)}
+.mk-x{border:1px solid var(--muted);background:linear-gradient(to top right,transparent calc(50% - .7px),var(--muted) calc(50% - .7px),var(--muted) calc(50% + .7px),transparent calc(50% + .7px))}
+.mk-f{border:1px dashed var(--line)}
+
+/* En-tête */
+.top{border-bottom:1px solid var(--line);position:relative;z-index:30}
+.top .inner{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:12px}
+.brand{display:flex;align-items:baseline;gap:14px;min-width:0}
+.brand h1{font-size:var(--s5);font-weight:800;letter-spacing:-.03em;white-space:nowrap;flex-shrink:0}
+.logo{all:unset;cursor:pointer}
+.logo:focus-visible{outline:2px solid var(--red);outline-offset:4px}
+.brand p{margin:0;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.right{display:flex;align-items:center;gap:16px;flex-shrink:0}
+.logo{display:inline-flex;align-items:center;gap:12px}
+.mark{display:inline-flex;gap:3px;align-items:center}
+.slots{display:flex;align-items:center;gap:8px}
+.box{width:14px;height:14px;border:1px solid var(--line);background:var(--bg);display:inline-block}
+.box.on{background:var(--fill);border-color:var(--muted);box-shadow:inset 0 -3px 0 var(--muted)}
+.box.fallow{border:1.5px solid var(--red);margin-left:4px}
+.box.off{border-style:dashed}
+.slots .lbl{font-size:var(--s1);font-weight:600;letter-spacing:.07em;text-transform:uppercase}
+.optbtn{min-height:40px;padding:0 14px;border:1px solid var(--line);background:var(--bg);cursor:pointer;font-weight:600;display:inline-flex;align-items:center;gap:8px}
+.optbtn[aria-expanded="true"]{background:var(--fill)}
+.optbtn svg{width:16px;height:16px}
+
+/* Options */
+.options{position:absolute;top:100%;right:var(--gr);width:min(760px,calc(100% - 32px));background:var(--bg);border:1px solid var(--line);box-shadow:0 18px 40px -24px rgba(0,0,0,.35);display:grid;grid-template-columns:1fr 1fr;z-index:40}
+.opt{display:flex;flex-direction:column;gap:10px;padding:16px 18px;border-top:1px solid var(--hair);border-left:1px solid var(--hair);min-width:0}
+.opt:nth-child(-n+2){border-top:0}.opt:nth-child(odd){border-left:0}
+.opt p{margin:0;color:var(--muted);font-size:14px}
+.opt .acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto}
+.opt select{min-height:38px;border:1px solid var(--line);background:var(--bg);padding:0 8px;border-radius:0}
+.opt .set{display:grid;grid-template-columns:auto 1fr;gap:8px 12px;align-items:center;font-size:14px}
+.status{font-size:13px;color:var(--muted)}
+@media (max-width:560px){.options{grid-template-columns:1fr;right:16px;left:16px;width:auto;max-height:calc(100dvh - 90px);overflow:auto}.opt{border-left:0!important;border-top:1px solid var(--hair)!important}.opt:first-child{border-top:0!important}.brand p,.slots .lbl{display:none}}
+
+/* Boutons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 18px;border:1px solid var(--line);background:var(--bg);cursor:pointer;font-weight:600;white-space:nowrap;border-radius:0}
+.btn:hover{background:var(--soft)}
+.btn.primary{border-color:var(--ink);font-weight:700}
+.btn.small{min-height:38px;padding:0 12px;font-size:14px}
+.btn.ghost{border-color:transparent;background:transparent;text-decoration:underline;text-underline-offset:3px;padding:0 4px}
+.btn[disabled]{opacity:.35;cursor:not-allowed}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{min-height:34px;padding:0 12px;border:1px solid var(--line);background:var(--bg);cursor:pointer;font-size:14px;border-radius:0;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.chip[aria-pressed="true"]{background:var(--fill);border-color:var(--ink)}
+.chip .c{color:var(--muted);font-size:13px}
+
+/* Saisie */
+.capture{display:flex;align-items:center;gap:12px 20px;padding-block:14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.capture input{flex:1 1 320px;min-width:0;border:0;background:transparent;font-size:var(--s4);font-weight:500;letter-spacing:-.01em;padding:6px 0;outline-offset:6px}
+.capture input::placeholder,#sowText::placeholder{color:#7A7572}
+.capture .go{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.capture .short{display:none}
+@media (max-width:640px){.capture{padding-block:10px;gap:8px}.capture .go{width:100%;justify-content:space-between;flex-wrap:nowrap;gap:10px}.capture input{flex-basis:100%}.capture .elab,.capture .long{display:none}.capture .short{display:inline}}
+.envie{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.dots{display:flex;gap:4px;align-items:center}
+.dot{width:30px;height:30px;border:1px solid var(--line);background:var(--bg);cursor:pointer;padding:0;border-radius:0}
+.dot[aria-pressed="true"]{background:var(--fill)}
+.dot.pick{background:var(--red);border-color:var(--red)}
+.dot:hover{border-color:var(--red)}
+.elab{font-size:13px;color:var(--muted);min-width:6.8em;margin-left:4px}
+
+/* Alertes */
+.alerts .inner{display:flex;gap:8px;flex-wrap:wrap;padding-block:10px 0}
+.alert{display:inline-flex;align-items:center;gap:8px;min-height:34px;padding:0 12px;border:1px solid var(--line);background:var(--bg);cursor:pointer;font-size:14px;font-weight:600}
+.alert:hover{background:var(--soft)}
+
+/* Onglets et filtres */
+.tabs{display:flex;gap:24px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{position:relative;border:0;background:transparent;padding:14px 0 12px;cursor:pointer;font-weight:600;color:var(--muted);display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.tab .n{font-weight:500}
+.tab[aria-selected="true"]{color:var(--ink)}
+.tab[aria-selected="true"]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--ink)}
+.filters{display:flex;align-items:center;justify-content:space-between;gap:10px 16px;padding-block:6px;flex-wrap:wrap}
+.filters:empty{display:none}
+.fls{display:flex;gap:18px;overflow-x:auto;scrollbar-width:none;max-width:100%}
+.fls::-webkit-scrollbar{display:none}
+.fl{border:0;border-bottom:2px solid transparent;background:none;min-height:36px;padding:0;color:var(--muted);font-weight:600;font-size:14px;cursor:pointer;white-space:nowrap}
+.fl .c{font-weight:500}
+.fl[aria-pressed="true"]{color:var(--ink);border-bottom-color:var(--ink)}
+.fl:hover{color:var(--ink)}
+.plot{display:flex;align-items:center;gap:16px;width:100%;min-height:112px;margin-top:12px;padding:20px;border:1px dashed var(--line);background:transparent;text-align:left;color:var(--muted);font-size:14px;line-height:1.4}
+button.plot{cursor:pointer}
+button.plot:hover,button.plot:focus-visible{border-color:var(--ink);color:var(--ink)}
+.plot .plus{flex:none;width:40px;height:40px;border:1px solid var(--line);display:grid;place-items:center;font-size:24px;line-height:1;color:var(--ink)}
+button.plot:hover .plus{border-color:var(--ink)}
+.plot b{display:block;color:var(--ink);font-weight:600;font-size:var(--s2);margin-bottom:2px}
+.plot.slot{min-height:64px;padding:14px 16px}
+.plot.slot .plus{width:14px;height:14px;border-style:dashed;font-size:0}
+.filters .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;max-width:100%}
+.filters .chips::-webkit-scrollbar{display:none}
+.search{flex:0 1 240px;min-width:140px;min-height:36px;border:0;border-bottom:1px solid var(--line);background:transparent;padding:0 2px;border-radius:0}
+
+/* Deux volets */
+.panes{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) clamp(340px,46%,540px)}
+.list{overflow:auto;min-height:0;padding-right:24px;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}
+.list.cols2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:24px;align-content:start}
+.list>.empty,.list>.chrono{grid-column:1/-1}
+.detail{overflow:auto;min-height:0;border-left:1px solid var(--line);padding-left:24px;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}
+.bnav{display:none}
+@media (max-width:759px),(max-height:520px){
+  .panes{grid-template-columns:minmax(0,1fr)}
+  .list{padding-right:0;padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}.list.cols2{display:block}
+  .detail{position:fixed;inset:0;z-index:50;background:var(--bg);border-left:0;padding:0 var(--gr) calc(24px + env(safe-area-inset-bottom,0px)) var(--gl);display:none}
+  .detail.open{display:block;animation:up .18s ease-out}
+  #capture,.alerts,.tabsband .tabs{display:none!important}
+  .brand p,.slots .lbl,.optbtn .optlbl{display:none}
+  .top .inner{padding-block:8px}
+  .optbtn{width:44px;min-height:44px;padding:0;justify-content:center}
+  .filters{padding-block:8px}
+  .bnav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--bg);border-top:1px solid var(--line);padding:4px var(--gr) calc(4px + env(safe-area-inset-bottom,0px)) var(--gl)}
+  .bnav button{border:0;background:transparent;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--muted);cursor:pointer;position:relative;padding:0 2px}
+  .bnav button[aria-selected="true"]{color:var(--ink)}
+  .bnav button[aria-selected="true"]::after{content:"";position:absolute;top:-5px;left:22%;right:22%;height:2px;background:var(--ink)}
+  .bnav .n{font-weight:500}
+  .bnav .ic{position:relative;display:inline-flex}
+  .bnav .badge{position:absolute;top:-5px;right:-7px;width:7px;height:7px;background:var(--red)}
+  .bnav .sow span.plus{width:40px;height:40px;border:1px solid var(--ink);display:grid;place-items:center;font-size:24px;font-weight:400;line-height:1;color:var(--ink)}
+  .bnav .sow{color:var(--ink)}
+}
+@media (max-height:520px){.bnav button{min-height:46px;flex-direction:row;gap:6px}.bnav .sow span.plus{width:32px;height:32px;font-size:20px}}
+@media (pointer:coarse){
+  .dot{width:44px;height:44px}
+  .chip,.alert,.btn.small,.fl{min-height:44px}
+  .close{width:44px;height:44px}
+  .logo{min-height:44px}
+  .subtabs .tab{min-height:44px}
+}
+.sheetdlg{margin:auto auto 0;width:100%;max-width:560px;border:0;border-top:1px solid var(--line)}
+@media (min-width:760px) and (min-height:521px){.sheetdlg{margin:auto;border:1px solid var(--line)}}
+.sheetdlg .wrap{padding-bottom:calc(20px + env(safe-area-inset-bottom,0px))}
+#sowText{width:100%;border:0;border-bottom:1px solid var(--line);font-size:var(--s4);font-weight:500;line-height:1.3;padding:8px 0;resize:none;background:transparent}
+#sowText:focus{outline:none;border-bottom-color:var(--ink)}
+.echoices{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.echoices button{display:flex;align-items:center;gap:10px;min-height:48px;padding:0 12px;border:1px solid var(--line);background:var(--bg);cursor:pointer;font-weight:600;text-align:left}
+.echoices button i{width:14px;height:14px;border:1px solid var(--line);flex-shrink:0}
+.echoices button[aria-pressed="true"]{border-color:var(--ink)}
+.echoices button[aria-pressed="true"] i{background:var(--red);border-color:var(--red)}
+.opt.about{grid-column:1/-1;border-left:0!important;border-top:1px solid var(--hair)!important}
+.wipe .warn{color:var(--red-ink);font-weight:600}
+.wipe input{min-height:44px;border:1px solid var(--line);padding:0 10px;max-width:260px;font-weight:600;letter-spacing:.06em}
+.wipe input:focus{outline:2px solid var(--red);outline-offset:1px}
+.btn.danger-btn{border-color:var(--red-ink);color:var(--red-ink)}
+.btn.danger-btn[disabled]{opacity:.35}
+.today .dhead{margin-bottom:-12px}
+@keyframes up{from{transform:translateY(16px);opacity:.6}to{transform:none;opacity:1}}
+.empty{padding:28px 0;color:var(--muted);max-width:44ch}
+
+/* Lignes */
+.card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 14px;text-align:left;border:0;border-top:1px solid var(--hair);background:transparent;cursor:pointer;padding:12px 6px 13px 0;color:var(--ink);width:100%;transition:background .12s}
+.card:hover{background:var(--soft)}
+.card[aria-current="true"]{background:var(--soft);box-shadow:inset 3px 0 0 var(--ink);padding-left:10px}
+.card .k{grid-column:1;font-size:var(--s1);font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);display:flex;gap:8px;align-items:center}
+.card .k.red{color:var(--red-ink)}
+.card .big{grid-column:2;grid-row:1/span 3;font-size:24px;font-weight:700;line-height:1;letter-spacing:-.03em;text-align:right;align-self:start}
+.card .big small{display:block;font-size:10.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+.card h3{grid-column:1;font-size:var(--s3);font-weight:700;line-height:1.2;overflow-wrap:anywhere}
+.card p{grid-column:1;margin:0;color:var(--muted);font-size:14px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.card .foot{grid-column:1/-1;display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:4px;font-size:13px;color:var(--muted)}
+.card .foot .late{color:var(--red-ink);font-weight:600}
+.free{display:flex;align-items:center;gap:10px;border-top:1px solid var(--hair);padding:16px 0;color:var(--muted)}
+.free .box{border-style:dashed}
+.bar{height:3px;background:var(--hair);position:relative;flex:1;max-width:110px}
+.bar b{position:absolute;inset:0 auto 0 0;background:var(--muted)}
+.mini{display:flex;gap:2px}
+.mini i{width:7px;height:7px;border:1px solid var(--line)}
+.mini i.on{background:var(--muted);border-color:var(--muted)}
+
+/* Chronologie */
+.chrono{display:flex;flex-direction:column;gap:22px}
+.chrono h2{font-size:var(--s1);font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding-top:4px;margin-bottom:2px;display:flex;justify-content:space-between}
+.ev{display:grid;grid-template-columns:64px 168px minmax(0,1fr);gap:2px 14px;align-items:baseline;border:0;border-top:1px solid var(--hair);padding:9px 0;width:100%;background:transparent;text-align:left;cursor:pointer;color:var(--ink)}
+.ev:hover{background:var(--soft)}
+.ev .d{color:var(--muted)}
+.ev .s{display:flex;align-items:center;gap:8px;font-size:var(--s1);font-weight:600;letter-spacing:.07em;text-transform:uppercase}
+.ev .t{font-weight:600;overflow-wrap:anywhere}
+@media (max-width:560px){.ev{grid-template-columns:56px minmax(0,1fr)}.ev .t{grid-column:2}}
+
+/* Aujourd'hui */
+.today{display:flex;flex-direction:column;gap:24px;padding-top:16px}
+.today h2{font-size:var(--s4);font-weight:700}
+.today section{display:flex;flex-direction:column}
+.today .lab{margin-bottom:6px}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--ink)}
+.stat{padding:10px 10px 4px;display:flex;flex-direction:column;gap:6px;border-right:1px solid var(--hair)}
+.stat:first-child{padding-left:0}.stat:last-child{border-right:0}
+.stat b{font-size:var(--s5);font-weight:700;letter-spacing:-.03em;line-height:1}
+.stat span{display:flex;align-items:center;gap:6px;font-size:var(--s1);font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.legend{display:flex;flex-direction:column;border-top:1px solid var(--ink)}
+.legend div{display:grid;grid-template-columns:18px 1fr;gap:10px;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--hair)}
+.legend b{display:block}
+.legend p{margin:0;color:var(--muted);font-size:14px}
+
+/* Fiche */
+.dhead{position:sticky;top:0;background:var(--bg);display:flex;justify-content:space-between;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top,0px)) 0 10px;z-index:2}
+@media (min-width:961px){.dhead{padding-top:12px}}
+.close{width:40px;height:40px;border:0;background:transparent;font-size:28px;line-height:1;cursor:pointer}
+.close:hover{background:var(--soft)}
+.pill{font-size:var(--s1);font-weight:700;letter-spacing:.07em;text-transform:uppercase;display:inline-flex;align-items:center;gap:8px}
+.sheet{display:flex;flex-direction:column;gap:16px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field>label,.field>.lab2{font-weight:700}
+.field .hint{font-size:13px;color:var(--muted);margin:0}
+.field input[type=text],.field input[type=date],.field textarea{width:100%;border:0;border-bottom:1px solid var(--hair);background:transparent;padding:6px 0;line-height:1.45;border-radius:0}
+.field input:focus,.field textarea:focus{border-bottom-color:var(--ink);outline:none}
+.field textarea{resize:vertical;min-height:48px}
+.field.title input{font-size:var(--s4);font-weight:700;letter-spacing:-.02em;border-bottom:0;line-height:1.15;padding:0}
+.field.idea textarea{min-height:44px;color:var(--muted)}
+.next{display:flex;flex-direction:column;gap:12px;padding:14px 0 4px;border-top:1px solid var(--ink)}
+.next .feedback{margin:0}
+.steps{display:flex;list-style:none;margin:0;padding:0}
+.steps li{flex:1;display:flex;flex-direction:column;gap:6px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);position:relative;min-width:0}
+.steps li::before{content:"";width:12px;height:12px;border:1px solid var(--line);background:var(--bg);position:relative;z-index:1}
+.steps li::after{content:"";position:absolute;top:6px;left:12px;right:0;height:1px;background:var(--hair)}
+.steps li:last-child::after{display:none}
+.steps li.done::before{background:var(--fill);border-color:var(--muted)}
+.steps li.done::after{background:var(--muted)}
+.steps li.cur{color:var(--ink)}
+.steps li.cur::before{border:2px solid var(--red)}
+.steps li.x::before{background:linear-gradient(to top right,transparent calc(50% - .7px),var(--muted) calc(50% - .7px),var(--muted) calc(50% + .7px),transparent calc(50% + .7px));border-color:var(--muted)}
+.nextrow{display:flex;align-items:center;justify-content:space-between;gap:10px 16px;flex-wrap:wrap}
+.nextrow p{margin:0;flex:1 1 220px}
+.subtabs{display:flex;gap:20px;border-bottom:1px solid var(--line);position:sticky;top:calc(60px + env(safe-area-inset-top,0px));background:var(--bg);z-index:1}
+@media (min-width:961px){.subtabs{top:62px}}
+.subtabs .tab{padding:10px 0 9px;font-size:14px}
+.pane{display:flex;flex-direction:column;gap:18px;padding-top:4px}
+.tl{display:flex;flex-direction:column;margin:0;padding:0;list-style:none}
+.tl li{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:12px;align-items:center;min-height:40px;position:relative}
+.tl li::before{content:"";position:absolute;left:5px;top:0;bottom:0;width:1px;background:var(--hair)}
+.tl li:first-child::before{top:50%}
+.tl li:last-child::before{bottom:50%}
+.tl .mk{position:relative;z-index:1}
+.tl .mk-j,.tl .mk-f,.tl .mk-p,.tl .mk-x{background-color:var(--bg)}
+.tl .lbl{font-weight:600}
+.tl li.future .lbl{color:var(--muted);font-weight:400}
+.tl input[type=date]{border:0;border-bottom:1px solid transparent;background:transparent;padding:4px 0;text-align:right;min-width:9.5em}
+.tl input[type=date]:hover{border-bottom-color:var(--line)}
+.tl input[type=date]:focus{border-bottom-color:var(--ink);outline:none}
+.tl .nodate{color:var(--line);text-align:right}
+.durs{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;color:var(--muted);padding-top:8px;border-top:1px solid var(--hair)}
+.durs b{color:var(--ink);font-weight:600}
+.block{display:flex;flex-direction:column;gap:12px;padding:14px 0;border-top:1px solid var(--ink)}
+.block h3{font-size:var(--s3);font-weight:700}
+.block p{margin:0}
+.block.due{border-top-color:var(--red)}
+.q{display:flex;flex-direction:column;gap:16px}
+.q .ess::after{content:attr(data-ess);margin-left:8px;font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--red-ink)}
+.recul{display:flex;flex-direction:column;gap:8px;padding:14px 16px;background:var(--soft)}
+.recul .qq{font-size:var(--s3);font-weight:700;line-height:1.25}
+.recul textarea{width:100%;border:0;border-bottom:1px solid var(--line);background:transparent;padding:6px 0;resize:vertical}
+.jl{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.jl li{display:grid;grid-template-columns:62px 1fr;gap:8px}
+.jl .d{color:var(--muted)}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.danger{color:var(--red-ink)}
+.inline-form{display:flex;flex-direction:column;gap:12px;padding:14px 16px;background:var(--soft)}
+dialog{border:1px solid var(--line);padding:0;width:min(560px,calc(100% - 32px));max-height:calc(100% - 32px);background:var(--bg);color:var(--ink)}
+dialog::backdrop{background:rgba(11,11,11,.3)}
+dialog .wrap{padding:0 20px 20px;display:flex;flex-direction:column;gap:14px}
+dialog .dhead{border-bottom:1px solid var(--line)}
+.copybox textarea{width:100%;min-height:240px;font-family:ui-monospace,Menlo,monospace;font-size:12.5px;border:1px solid var(--line);padding:8px;background:var(--bg);border-radius:0}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--bg);color:var(--ink);border:1px solid var(--line);box-shadow:0 6px 24px -12px rgba(0,0,0,.3);padding:12px 18px;z-index:60;max-width:calc(100% - 32px)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+
+<header class="top band">
+  <div class="inner">
+    <div class="brand"><h1><button type="button" class="logo" id="logoBtn"><span>Novale</span><span class="mark" id="mark" aria-hidden="true"></span></button></h1><p data-i="tagline"></p></div>
+    <div class="right">
+      <div class="slots" id="slots" aria-live="polite"><span class="lbl" id="slotsLbl"></span></div>
+      <button class="optbtn" type="button" id="optBtn" aria-expanded="false" aria-controls="options"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1 4h14M1 12h14" stroke="currentColor" stroke-width="1.6"/><rect x="4" y="2" width="3" height="4" fill="currentColor"/><rect x="9" y="10" width="3" height="4" fill="currentColor"/></svg><span class="optlbl" data-i="options"></span></button>
+    </div>
+  </div>
+  <section class="options" id="options" hidden>
+    <div class="opt">
+      <span class="lab" data-i="settings"></span>
+      <div class="set">
+        <label for="setLang" data-i="lang"></label>
+        <select id="setLang"><option value="fr">Français</option><option value="en">English</option></select>
+        <label for="setRest" data-i="rest"></label>
+        <select id="setRest"></select>
+        <label for="setLimit" data-i="slotsSet"></label>
+        <select id="setLimit"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
+      </div>
+      <p class="status" id="storeStatus"></p>
+    </div>
+    <div class="opt">
+      <span class="lab" data-i="toObs"></span>
+      <p data-i="toObsP"></p>
+      <div class="acts"><button class="btn small" type="button" id="zipBtn" hidden data-i="zip"></button><button class="btn small" type="button" id="copyAllBtn" data-i="copyAll"></button></div>
+    </div>
+    <div class="opt">
+      <span class="lab" data-i="fromObs"></span>
+      <p data-i="fromObsP"></p>
+      <div class="acts"><label class="btn small" for="importFile" data-i="openMd"></label><input type="file" id="importFile" accept=".md,.markdown,text/markdown,text/plain" multiple class="sr"><button class="btn small" type="button" id="pasteBtn" data-i="paste"></button></div>
+    </div>
+    <div class="opt">
+      <span class="lab" data-i="paper"></span>
+      <p data-i="paperP"></p>
+      <div class="acts"><button class="btn small" type="button" id="blankBtn" data-i="blank"></button></div>
+    </div>
+    <div class="opt about" id="installBox" hidden></div>
+    <div class="opt about wipe" id="wipeBox"></div>
+    <div class="opt about">
+      <span class="lab" data-i="about"></span>
+      <p id="aboutP"></p>
+    </div>
+  </section>
+</header>
+
+<form class="band" id="capture" autocomplete="off">
+  <div class="inner capture">
+    <label for="capText" class="sr" data-i="capLbl"></label>
+    <input type="text" id="capText" data-ph="capPh" enterkeyhint="done">
+    <div class="go">
+      <div class="envie" role="group" aria-labelledby="capEnvieLbl"><span id="capEnvieLbl" class="lab" data-i="desire"></span><div class="dots" id="capDots"></div></div>
+      <button class="btn primary" type="submit"><span class="long" data-i="sowLong"></span><span class="short" data-i="sowShort"></span></button>
+    </div>
+  </div>
+</form>
+
+<div class="band alerts" id="alerts" hidden><div class="inner" id="alertsIn"></div></div>
+
+<div class="band tabsband">
+  <div class="inner">
+    <nav class="tabs" role="tablist" id="tabs"></nav>
+    <div class="filters" id="filters"></div>
+  </div>
+</div>
+
+<div class="panes inner">
+  <div class="list" id="list" role="tabpanel"></div>
+  <aside class="detail" id="detail"></aside>
+</div>
+
+<nav class="bnav" id="bnav" role="tablist"></nav>
+
+<dialog id="aux"><div class="wrap" id="auxBody"></div></dialog>
+<dialog id="sowDlg" class="sheetdlg" aria-labelledby="sowH"><form class="wrap" id="sowForm" autocomplete="off">
+  <div class="dhead"><span class="pill" id="sowH"><span class="mk mk-j"></span><span data-i="newIdea"></span></span><button class="close" type="button" data-x data-i-aria="close">×</button></div>
+  <label for="sowText" class="sr" data-i="capLbl"></label>
+  <textarea id="sowText" rows="2" data-ph="capPh" enterkeyhint="done"></textarea>
+  <span class="lab" data-i="desire"></span>
+  <div class="echoices" id="sowChoices" role="group"></div>
+  <button class="btn primary" type="submit" data-i="sowLong"></button>
+</form></dialog>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(()=>{
+"use strict";
+/* ---------- Langues ---------- */
+const I18N={
+fr:{
+  e_first:"Sème ta première idée",e_firstP:r=>`Une phrase suffit. Elle reposera ${r} jours avant que tu la relises.`,e_next:"Rien en jachère",e_nextP:"Le champ est propre. Sème la prochaine idée quand elle viendra.",
+  e_arch:"Rien de récolté ni de composté",e_archP:"Les idées terminées, transmises ou abandonnées viendront ici.",e_chrono:"Aucune date",e_chronoP:"Chaque étape de tes idées viendra s'inscrire ici.",
+  w_title:"Effacer tout",w_p:"Supprime toutes les idées de ce carnet. Les réglages sont conservés.",w_btn:"Effacer tout le carnet…",
+  w_1:n=>`Étape 1 sur 3. Tu vas supprimer ${n} idée${n>1?"s":""}, avec leurs dates, réponses et journaux. Cette action est définitive.`,w_1b:"Exporte d'abord vers Obsidian si tu veux garder une copie.",w_cont:"Je comprends, continuer",
+  w_2:"Étape 2 sur 3. Rien ne pourra être récupéré, ni ici ni sur tes autres appareils.",w_cont2:"Oui, je veux tout effacer",
+  w_3:w=>`Étape 3 sur 3. Pour confirmer, écris ${w} ci-dessous.`,w_word:"EFFACER",w_final:"Effacer définitivement",w_done:"Carnet effacé.",w_empty:"Le carnet est déjà vide.",w_input:"Mot de confirmation",
+  i_title:"Installer l'application",i_p:"Novale s'ouvre alors comme une application, depuis ton écran d'accueil ou ton dock, et fonctionne hors ligne.",i_btn:"Installer Novale",i_done:"Novale est installé.",
+  i_ios:"Sur iPhone ou iPad, dans Safari : touche Partager, puis « Sur l'écran d'accueil ».",i_other:"Dans le menu de ton navigateur, choisis « Installer l'application » ou « Ajouter à l'écran d'accueil ».",
+  newIdea:"Nouvelle idée",today:"Aujourd'hui",about:"À propos",aboutP:v=>`Novale ${v} est un logiciel libre sous licence MIT. Il a été conçu avec l'aide de Claude, une IA d'Anthropic, sous la direction de son auteur. Aucune IA n'intervient pendant l'utilisation et Novale n'envoie aucune donnée.`,
+  bn_jachere:"Jachère",bn_cultivee:"Cultivées",bn_archives:"Archives",bn_chrono:"Chrono",bn_sow:"Semer",bnAria:(l,n,d)=>l+(n!=null?`, ${n}`:"")+(d?`, ${d} à relire`:""),
+  locale:"fr-CH",tagline:"Semer, laisser reposer, cultiver ce qui tient.",options:"Options",settings:"Réglages",lang:"Langue",rest:"Repos",slotsSet:"Cultures",
+  restOpt:n=>n+" jours",toObs:"Vers Obsidian",toObsP:"Chaque idée devient une note avec son statut et ses dates. L'archive ajoute un tableau Dataview et un modèle.",zip:"Enregistrer (.zip)",copyAll:"Copier tout",
+  fromObs:"Depuis Obsidian",fromObsP:"Les idées déjà présentes sont mises à jour, les autres ajoutées.",openMd:"Ouvrir des .md",paste:"Coller",paper:"Sur papier",paperP:"Fiche A6 recto verso avec les questions et les dates du cycle.",blank:"Fiches vierges",
+  capLbl:"Nouvelle idée, en une phrase",capPh:"Nouvelle idée, en une phrase.",desire:"Envie",choose:"Choisis",sowLong:"Mettre en jachère",sowShort:"Semer",
+  tabsAria:"Étapes du cycle",detailAria:"Fiche",filterAria:"Filtrer",search:"Chercher",close:"Fermer",
+  tab_jachere:"En jachère",tab_cultivee:"Cultivées",tab_archives:"Archives",tab_chrono:"Chronologie",
+  f_toutes:"Toutes",f_due:"À relire",f_prete:"Mûres",f_repos:"Au repos",f_tout:"Tout",f_recoltee:"Récoltées",f_compostee:"Compostées",f_avenir:"À venir",f_mois:"Ce mois",
+  st_jachere:"En jachère",st_cultivee:"Cultivée",st_recoltee:"Récoltée",st_compostee:"Compostée",st_repos:"Au repos",st_due:"À relire",st_prete:"Mûre",
+  ev_semee:"Semée",ev_relire:"Relecture prévue",ev_relue:"Relue",ev_cultivee:"Cultivée",ev_prevue:"Récolte prévue",ev_recoltee:"Récoltée",ev_compostee:"Compostée",ev_late:"Récolte en retard",ev_dueNow:"À relire",
+  envie:["","Bof","Plutôt non","Plutôt oui","Très envie"],envieAria:(l,n)=>`${l} (${n} sur 4)`,envieNone:"non notée",
+  day:n=>n+" jour"+(Math.abs(n)>1?"s":""),
+  slotsTitle:(n,L,j)=>`${n} cultures sur ${L} places, ${j} idées en jachère`,slotsLbl:(n,L,j)=>`${n}/${L} cultivées · ${j} en jachère`,
+  c_sown:d=>"Semée le "+d,c_rest:"j de repos",c_restBar:(a,b)=>`Repos : ${a} jours sur ${b}`,c_review:d=>"Relire le "+d,c_late:"j de retard",c_today:"aujourd'hui",c_reviewed:d=>"Relue le "+d,c_ready:"réponses",
+  c_growing:d=>"Cultivée le "+d,c_growDays:"j de culture",c_hLate:n=>"Récolte en retard de "+n,c_hDue:d=>"Récolte prévue le "+d,c_in:n=>" · dans "+n,c_harvested:d=>"Récoltée le "+d,c_cycle:"j de cycle",c_handed:x=>"Transmise à "+x,c_composted:d=>"Compostée le "+d,c_life:"j de vie",
+  slotsInfo:(n,L)=>`${n} sur ${L} places de culture`,free:"Place libre. Une idée relue et mûre peut la prendre.",
+  emptyFilter:"Rien ici pour ce filtre.",loading:"Ouverture du carnet…",emptyAll:r=>`Aucune idée pour l'instant. Note la première en haut : elle reposera ${r} jours avant que tu la relises.`,
+  noDates:"Aucune date pour ce filtre.",upcoming:"À venir",
+  migrate:n=>`Ajouter ${n} idée${n>1?"s":""} de ce navigateur au carnet en ligne`,aDue:n=>`${n} à relire`,aLate:n=>`${n} récolte${n>1?"s":""} en retard`,
+  lgTitle:"Le cycle d'une idée",lgJ:"En jachère",lgJp:r=>`Tu la notes et tu l'oublies ${r} jours. Ensuite tu la relis : si l'envie tient, tu réponds aux quatre questions essentielles.`,lgC:"Cultivée",lgCp:L=>`Elle prend une des ${L} places. Tu peux fixer une date de récolte.`,lgR:"Récoltée",lgRp:"Terminée par toi, ou transmise à quelqu'un.",lgX:"Compostée",lgXp:"Abandonnée en connaissance de cause, avec ce que tu en gardes.",
+  todayH:d=>"Aujourd'hui, "+d,sSown:"Semées",sGrown:"Cultivées",sHarv:"Récoltées",sComp:"Compostées",tDue:"À relire",tLate:"Récoltes en retard",tNext:"Prochaines dates",tNone:"Rien de prévu.",
+  steps:["Semée","Relue","Mûre","Cultivée","Récoltée"],stepComp:"Compostée",stepsAria:"Étapes",
+  n_rest:(d,n)=>`<b>Prochaine étape : la relecture</b>, le ${d}, dans ${n}.`,n_restBtn:"Relire maintenant",n_due:(d,e)=>`<b>C'est le moment de la relire.</b> Semée le ${d} avec l'envie « ${e} ». Relis-la comme si quelqu'un d'autre l'avait écrite : l'envie tient-elle ?`,n_dueBtn:"Relire",
+  n_ripen:r=>`<b>Prochaine étape : mûrir.</b> ${r} réponse${r>1?"s":""} essentielle${r>1?"s":""} sur 4.`,n_ripenBtn:"Répondre aux questions",n_readyFull:L=>`<b>Mûre</b>, mais tes ${L} places sont prises. Récolte ou composte d'abord une culture :`,n_ready:L=>`<b>Mûre, prête à cultiver.</b> Elle prendra une place sur ${L}.`,n_grow:"Cultiver",
+  n_growing:(n,d)=>`<b>En culture depuis ${n}.</b>${d?` Récolte prévue le ${d}.`:""}`,n_harvest:"Récolter",n_end:(l,d,n)=>`<b>${l} le ${d}</b>, après un cycle de ${n}.`,n_resow:"Resemer",
+  earlyQ:"Le repos n'est pas fini. Qu'est-ce qui presse ?",earlyH:"Facultatif. Une échéance réelle, ou l'envie du neuf ?",earlyGo:"Relire maintenant",earlyNo:"Laisser reposer",
+  sub_cycle:"Cycle",sub_q:r=>"Mûrissement "+r+"/4",sub_notes:"Notes et export",subAria:"Sections de la fiche",
+  title:"Titre",idea:"L'idée",desireRev:x=>"Relue : "+x,datesAria:"Dates du cycle",dateOf:x=>"Date : "+x,
+  tl_dueNow:"Relecture, c'est le moment",tl_late:"Récolte prévue, dépassée",tl_end:"Récoltée ou compostée",
+  d_rest:"Repos",d_grow:"Culture",d_full:"Cycle complet",d_since:"Depuis les semis",
+  b_rest:n=>"Au repos encore "+n,b_restP:"Le repos sert à vérifier que l'envie tient. Tu peux déjà noter des réponses dans Mûrissement.",compost:"Composter",
+  b_review:"Relecture",b_reviewP:(d,e)=>`Semée le ${d} avec l'envie « ${e} ». Relis-la comme si quelqu'un d'autre l'avait écrite.`,b_desireToday:"Envie aujourd'hui",
+  b_low:"<b>L'envie est passée du côté du non.</b> C'est souvent le signe qu'elle peut aller au compost, sans regret.",b_less:"<b>L'envie tient, un peu moins forte.</b> Les questions diront si elle mérite une place.",b_holds:"<b>L'envie tient.</b> Bon signe : passe aux questions.",
+  b_holdsBtn:"Elle tient",b_again:r=>`Encore ${r} jours`,b_readyH:r=>`Prête à cultiver ? ${r}/4`,b_missing:n=>`Il manque encore ${n} réponse${n>1?"s":""} essentielle${n>1?"s":""}.`,b_full:L=>`<b>Tes ${L} places de culture sont prises.</b> Récolte ou composte d'abord une culture :`,
+  b_restAgain:"Remettre au repos",b_growingH:n=>"En culture depuis "+n,b_harvestIs:"La récolte, c'est :",b_backFallow:"Remettre en jachère",b_endH:(l,d)=>`${l} le ${d}`,b_gave:"Ce que ça a donné",b_kept:"Ce que tu en gardes",
+  f_due_lbl:"Récolte prévue le",f_dueH:"Facultatif. Une date te dira si la culture traîne.",f_2w:"Dans 2 semaines",f_1m:"Dans 1 mois",f_3m:"Dans 3 mois",f_growGo:"Cultiver dès aujourd'hui",cancel:"Annuler",
+  f_handed:"Transmise à",f_handedH:"Laisse vide si tu l'as menée toi-même.",f_gaveH:"Le résultat, et ce que tu referais autrement.",f_keptH:"Composter n'est pas un échec : c'est une décision. Qu'est-ce qui nourrira les prochaines idées ?",f_harvGo:"Récolter aujourd'hui",f_compGo:"Composter aujourd'hui",
+  ess:"Essentielle",recul:"Question de recul",reculPh:"Ta réponse, même courte.",reculSave:"Garder la réponse",reculNext:"Une autre question",reflections:"Réflexions",allFour:"Les quatre réponses sont là : cultiver",
+  linked:"Liée à",linkedH:"Deviennent des liens [[…]] dans Obsidian.",noLinks:"Aucune autre idée en jachère ou en culture.",tags:"Tags",tagsH:"Séparés par des virgules.",copyMd:"Copier pour Obsidian",saveMd:"Enregistrer la note (.md)",savePaper:"Fiche à imprimer",log:"Journal",
+  delQ:"<b>Supprimer définitivement cette idée ?</b> Composter garde une trace, supprimer non.",del:"Supprimer",keep:"Garder",delIdea:"Supprimer l'idée",
+  t_wrote:"Écris l'idée en une phrase.",t_desire:"Choisis ton envie : plutôt oui ou plutôt non ?",t_sown:d=>`En jachère jusqu'au ${d}. Tu peux l'oublier.`,t_reviewOn:d=>`Relecture le ${d}.`,t_restUntil:d=>`Au repos jusqu'au ${d}.`,t_full:"Toutes les places de culture sont prises.",
+  t_growing:(n,L)=>`En culture. ${n} / ${L} places.`,t_done:(l,d)=>`${l} le ${d}.`,t_resown:d=>`Resemée. Relecture le ${d}.`,t_refl:"Réflexion gardée.",t_copiedNote:"Note copiée. Colle-la dans une nouvelle note Obsidian.",t_saved:"Note enregistrée.",t_print:"Ouvre le fichier dans ton navigateur pour l'imprimer.",
+  t_deleted:"Idée supprimée.",t_migrated:"Idées ajoutées au carnet en ligne.",t_dateReq:"Cette date est obligatoire.",t_empty:"Le carnet est vide.",t_copiedAll:n=>n+" notes copiées.",t_unzip:"Décompresse le dossier dans ton coffre Obsidian.",t_zipFail:"Archive impossible à créer ici. Utilise la copie.",
+  t_restSet:n=>`Les nouvelles idées reposeront ${n} jours.`,t_notSaved:q=>"Pas enregistré : "+(q?"le carnet en ligne est plein":"connexion perdue")+".",t_delFail:"Suppression non enregistrée.",t_busy:"Un enregistrement est déjà en cours.",t_saveFail:"Enregistrement impossible ici. Utilise la copie.",
+  t_import:(a,u)=>[a?a+" ajoutée"+(a>1?"s":""):"",u?u+" mise"+(u>1?"s":"")+" à jour":""].filter(Boolean).join(", ")||"Rien à importer.",t_codeCopied:"Code de la fiche copié. Colle-le dans un fichier .html.",
+  manualCopy:"Copie manuelle",manualCopyP:"La copie automatique est bloquée ici. Le texte est sélectionné : copie-le avec ton clavier ou un appui long.",pasteTitle:"Coller une note",pasteP:"Colle une ou plusieurs notes Novale, propriétés comprises.",importBtn:"Importer",
+  st_db:"Enregistré dans ton compte, privé : tu retrouves le carnet sur tous tes appareils.",st_local:"Enregistré dans ce navigateur seulement. Exporte régulièrement vers Obsidian pour garder une copie.",st_dbErr:c=>`Le carnet en ligne ne répond pas (${c}). Les modifications restent dans ce navigateur.`,
+  l_sown:e=>`Semée, envie « ${e} »`,l_early:r=>"Relecture avancée"+(r?" : "+r:""),l_holds:e=>`Relue, envie « ${e} » : elle mûrit`,l_again:n=>`Encore ${n} jours de repos`,l_unGrow:"Retirée de la culture, remise en jachère",l_rest:"Remise au repos",
+  l_grow:(d,r)=>"Cultivée"+(d?", récolte prévue le "+d:"")+(r?", à la place de : "+r:""),l_end:(l,to,n)=>l+(to?", transmise à "+to:"")+(n?" : "+n:""),l_resow:(a,b)=>`Resemée (cycle précédent du ${a} au ${b})`,l_date:(k,v)=>`Date modifiée : ${k} → ${v||"aucune"}`,
+  untitled:"Idée sans titre",
+  md_refl:"Réflexions",md_out:"Bilan",md_links:"Liens",md_log:"Journal",md_handed:x=>"Transmise à "+x+". ",md_ideaPh:"L'idée en une phrase",md_sown:"Semée",
+  dash:"Tableau de bord Novale. Nécessite le plugin communautaire Dataview.",dashFile:"_Tableau Novale",tplDir:"_Modèles",tplFile:"Idée Novale",
+  dv_due:"À relire",dv_grow:"Cultivées",dv_ready:"Prêtes à cultiver",dv_rest:"Au repos",dv_harv:"Récoltées",dv_comp:"Compostées",
+  dvc:{desire:"Envie",sown:"Semée",review:"Relire le",growing:"Cultivée le",due:"Récolte prévue",days:"Jours",reviewed:"Relue le",harvested:"Récoltée le",handed:"Transmise à",cycle:"Cycle (j)",composted:"Compostée le",life:"Vie (j)"},
+  p_idea:"Idée",p_sown:d=>"Semée le "+d,p_sownBlank:"Semée le ___ / ___ / ______",p_review:d=>"Relire le "+d,p_reviewBlank:"Relire le ___ / ___",p_desireRev:"Envie à la relecture",p_ripen:"Mûrissement",
+  p_grow:"Cultivée le __/__ · récolte prévue __/__",p_harv:"Récoltée le __/__",p_comp:"Compostée le __/__",p_help:"Imprime en A6 paysage (148 × 105 mm), recto verso, ou plusieurs par page dans les options d'impression.",p_title:"Fiches Novale",p_blankFile:"Fiches Novale vierges",p_file:"Fiche"
+},
+en:{
+  e_first:"Add your first idea",e_firstP:r=>`One sentence is enough. It will rest ${r} days before you review it.`,e_next:"Nothing resting",e_nextP:"The field is clean. Add the next idea when it comes.",
+  e_arch:"Nothing harvested or composted",e_archP:"Finished, handed-over or dropped ideas will land here.",e_chrono:"No dates",e_chronoP:"Every stage of your ideas will be recorded here.",
+  w_title:"Delete everything",w_p:"Removes every idea from this notebook. Settings are kept.",w_btn:"Delete the whole notebook…",
+  w_1:n=>`Step 1 of 3. You are about to delete ${n} idea${n>1?"s":""}, with their dates, answers and logs. This cannot be undone.`,w_1b:"Export to Obsidian first if you want to keep a copy.",w_cont:"I understand, continue",
+  w_2:"Step 2 of 3. Nothing can be recovered, here or on your other devices.",w_cont2:"Yes, delete everything",
+  w_3:w=>`Step 3 of 3. To confirm, type ${w} below.`,w_word:"DELETE",w_final:"Delete for good",w_done:"Notebook deleted.",w_empty:"The notebook is already empty.",w_input:"Confirmation word",
+  i_title:"Install the app",i_p:"Novale then opens like an app, from your home screen or dock, and works offline.",i_btn:"Install Novale",i_done:"Novale is installed.",
+  i_ios:"On iPhone or iPad, in Safari: tap Share, then “Add to Home Screen”.",i_other:"In your browser menu, choose “Install app” or “Add to Home Screen”.",
+  newIdea:"New idea",today:"Today",about:"About",aboutP:v=>`Novale ${v} is free software under the MIT licence. It was built with the help of Claude, an AI by Anthropic, under its author's direction. No AI runs while you use it and Novale sends no data.`,
+  bn_jachere:"Resting",bn_cultivee:"Growing",bn_archives:"Archive",bn_chrono:"Timeline",bn_sow:"New",bnAria:(l,n,d)=>l+(n!=null?`, ${n}`:"")+(d?`, ${d} to review`:""),
+  locale:"en-GB",tagline:"Write it down, let it rest, grow what holds.",options:"Options",settings:"Settings",lang:"Language",rest:"Rest",slotsSet:"Growing slots",
+  restOpt:n=>n+" days",toObs:"To Obsidian",toObsP:"Each idea becomes a note with its status and dates. The archive adds a Dataview dashboard and a template.",zip:"Save (.zip)",copyAll:"Copy all",
+  fromObs:"From Obsidian",fromObsP:"Existing ideas are updated, new ones are added.",openMd:"Open .md files",paste:"Paste",paper:"On paper",paperP:"A6 double-sided card with the questions and cycle dates.",blank:"Blank cards",
+  capLbl:"New idea, in one sentence",capPh:"New idea, in one sentence.",desire:"Desire",choose:"Choose",sowLong:"Let it rest",sowShort:"Add",
+  tabsAria:"Cycle stages",detailAria:"Idea",filterAria:"Filter",search:"Search",close:"Close",
+  tab_jachere:"Resting",tab_cultivee:"Growing",tab_archives:"Archive",tab_chrono:"Timeline",
+  f_toutes:"All",f_due:"To review",f_prete:"Ripe",f_repos:"Waiting",f_tout:"All",f_recoltee:"Harvested",f_compostee:"Composted",f_avenir:"Upcoming",f_mois:"This month",
+  st_jachere:"Resting",st_cultivee:"Growing",st_recoltee:"Harvested",st_compostee:"Composted",st_repos:"Waiting",st_due:"To review",st_prete:"Ripe",
+  ev_semee:"Added",ev_relire:"Review due",ev_relue:"Reviewed",ev_cultivee:"Growing",ev_prevue:"Harvest due",ev_recoltee:"Harvested",ev_compostee:"Composted",ev_late:"Harvest overdue",ev_dueNow:"To review",
+  envie:["","Meh","Rather not","Rather yes","Really want"],envieAria:(l,n)=>`${l} (${n} of 4)`,envieNone:"not rated",
+  day:n=>n+" day"+(Math.abs(n)!==1?"s":""),
+  slotsTitle:(n,L,j)=>`${n} growing of ${L} slots, ${j} ideas resting`,slotsLbl:(n,L,j)=>`${n}/${L} growing · ${j} resting`,
+  c_sown:d=>"Added "+d,c_rest:"days rest",c_restBar:(a,b)=>`Rest: ${a} of ${b} days`,c_review:d=>"Review on "+d,c_late:"days late",c_today:"today",c_reviewed:d=>"Reviewed "+d,c_ready:"answers",
+  c_growing:d=>"Growing since "+d,c_growDays:"days growing",c_hLate:n=>"Harvest overdue by "+n,c_hDue:d=>"Harvest due "+d,c_in:n=>" · in "+n,c_harvested:d=>"Harvested "+d,c_cycle:"days cycle",c_handed:x=>"Handed to "+x,c_composted:d=>"Composted "+d,c_life:"days of life",
+  slotsInfo:(n,L)=>`${n} of ${L} growing slots`,free:"Free slot. A reviewed, ripe idea can take it.",
+  emptyFilter:"Nothing here for this filter.",loading:"Opening your notebook…",emptyAll:r=>`No ideas yet. Write the first one above: it will rest ${r} days before you review it.`,
+  noDates:"No dates for this filter.",upcoming:"Upcoming",
+  migrate:n=>`Add ${n} idea${n>1?"s":""} from this browser to your online notebook`,aDue:n=>`${n} to review`,aLate:n=>`${n} harvest${n>1?"s":""} overdue`,
+  lgTitle:"The life of an idea",lgJ:"Resting",lgJp:r=>`Write it down and forget it for ${r} days. Then review it: if the desire holds, answer the four essential questions.`,lgC:"Growing",lgCp:L=>`It takes one of ${L} slots. You can set a harvest date.`,lgR:"Harvested",lgRp:"Finished by you, or handed to someone.",lgX:"Composted",lgXp:"Dropped on purpose, with what you keep from it.",
+  todayH:d=>"Today, "+d,sSown:"Added",sGrown:"Growing",sHarv:"Harvested",sComp:"Composted",tDue:"To review",tLate:"Overdue harvests",tNext:"Next dates",tNone:"Nothing planned.",
+  steps:["Added","Reviewed","Ripe","Growing","Harvested"],stepComp:"Composted",stepsAria:"Stages",
+  n_rest:(d,n)=>`<b>Next step: review</b>, on ${d}, in ${n}.`,n_restBtn:"Review now",n_due:(d,e)=>`<b>Time to review it.</b> Added on ${d} with desire “${e}”. Read it as if someone else had written it: does the desire hold?`,n_dueBtn:"Review",
+  n_ripen:r=>`<b>Next step: ripen.</b> ${r} of 4 essential answers.`,n_ripenBtn:"Answer the questions",n_readyFull:L=>`<b>Ripe</b>, but your ${L} slots are taken. Harvest or compost one first:`,n_ready:L=>`<b>Ripe, ready to grow.</b> It will take one of ${L} slots.`,n_grow:"Grow",
+  n_growing:(n,d)=>`<b>Growing for ${n}.</b>${d?` Harvest due ${d}.`:""}`,n_harvest:"Harvest",n_end:(l,d,n)=>`<b>${l} on ${d}</b>, after a ${n} cycle.`,n_resow:"Start again",
+  earlyQ:"The rest isn't over. What's the rush?",earlyH:"Optional. A real deadline, or the pull of something new?",earlyGo:"Review now",earlyNo:"Let it rest",
+  sub_cycle:"Cycle",sub_q:r=>"Ripening "+r+"/4",sub_notes:"Notes & export",subAria:"Idea sections",
+  title:"Title",idea:"The idea",desireRev:x=>"At review: "+x,datesAria:"Cycle dates",dateOf:x=>"Date: "+x,
+  tl_dueNow:"Review, it's time",tl_late:"Harvest due, overdue",tl_end:"Harvested or composted",
+  d_rest:"Rest",d_grow:"Growing",d_full:"Full cycle",d_since:"Since added",
+  b_rest:n=>"Resting for "+n+" more",b_restP:"The rest checks whether the desire holds. You can already jot answers in Ripening.",compost:"Compost",
+  b_review:"Review",b_reviewP:(d,e)=>`Added on ${d} with desire “${e}”. Read it as if someone else had written it.`,b_desireToday:"Desire today",
+  b_low:"<b>The desire has turned to no.</b> That's often a sign it can go to the compost, no regrets.",b_less:"<b>The desire holds, a little weaker.</b> The questions will tell if it deserves a slot.",b_holds:"<b>The desire holds.</b> Good sign: move on to the questions.",
+  b_holdsBtn:"It holds",b_again:r=>`${r} more days`,b_readyH:r=>`Ready to grow? ${r}/4`,b_missing:n=>`${n} essential answer${n>1?"s":""} still missing.`,b_full:L=>`<b>Your ${L} growing slots are taken.</b> Harvest or compost one first:`,
+  b_restAgain:"Back to rest",b_growingH:n=>"Growing for "+n,b_harvestIs:"The harvest is:",b_backFallow:"Back to rest",b_endH:(l,d)=>`${l} on ${d}`,b_gave:"What came of it",b_kept:"What you keep from it",
+  f_due_lbl:"Harvest due on",f_dueH:"Optional. A date will tell you if it drags.",f_2w:"In 2 weeks",f_1m:"In 1 month",f_3m:"In 3 months",f_growGo:"Grow from today",cancel:"Cancel",
+  f_handed:"Handed to",f_handedH:"Leave empty if you carried it yourself.",f_gaveH:"The result, and what you'd do differently.",f_keptH:"Composting isn't failure: it's a decision. What will feed your next ideas?",f_harvGo:"Harvest today",f_compGo:"Compost today",
+  ess:"Essential",recul:"Step-back question",reculPh:"Your answer, even a short one.",reculSave:"Keep the answer",reculNext:"Another question",reflections:"Reflections",allFour:"All four answers are in: grow it",
+  linked:"Linked to",linkedH:"Become [[…]] links in Obsidian.",noLinks:"No other resting or growing ideas.",tags:"Tags",tagsH:"Comma-separated.",copyMd:"Copy for Obsidian",saveMd:"Save note (.md)",savePaper:"Printable card",log:"Log",
+  delQ:"<b>Delete this idea for good?</b> Composting keeps a trace, deleting doesn't.",del:"Delete",keep:"Keep",delIdea:"Delete idea",
+  t_wrote:"Write the idea in one sentence.",t_desire:"Pick your desire: rather yes or rather not?",t_sown:d=>`Resting until ${d}. You can forget it.`,t_reviewOn:d=>`Review on ${d}.`,t_restUntil:d=>`Resting until ${d}.`,t_full:"All growing slots are taken.",
+  t_growing:(n,L)=>`Growing. ${n} / ${L} slots.`,t_done:(l,d)=>`${l} on ${d}.`,t_resown:d=>`Started again. Review on ${d}.`,t_refl:"Reflection kept.",t_copiedNote:"Note copied. Paste it into a new Obsidian note.",t_saved:"Note saved.",t_print:"Open the file in your browser to print it.",
+  t_deleted:"Idea deleted.",t_migrated:"Ideas added to your online notebook.",t_dateReq:"This date is required.",t_empty:"The notebook is empty.",t_copiedAll:n=>n+" notes copied.",t_unzip:"Unzip the folder into your Obsidian vault.",t_zipFail:"Can't create the archive here. Use copy instead.",
+  t_restSet:n=>`New ideas will rest ${n} days.`,t_notSaved:q=>"Not saved: "+(q?"the online notebook is full":"connection lost")+".",t_delFail:"Deletion not saved.",t_busy:"A save is already in progress.",t_saveFail:"Can't save here. Use copy instead.",
+  t_import:(a,u)=>[a?a+" added":"",u?u+" updated":""].filter(Boolean).join(", ")||"Nothing to import.",t_codeCopied:"Card code copied. Paste it into an .html file.",
+  manualCopy:"Manual copy",manualCopyP:"Automatic copy is blocked here. The text is selected: copy it with your keyboard or a long press.",pasteTitle:"Paste a note",pasteP:"Paste one or more Novale notes, properties included.",importBtn:"Import",
+  st_db:"Saved privately in your account: your notebook follows you on every device.",st_local:"Saved in this browser only. Export to Obsidian regularly to keep a copy.",st_dbErr:c=>`The online notebook isn't responding (${c}). Changes stay in this browser.`,
+  l_sown:e=>`Added, desire “${e}”`,l_early:r=>"Review moved up"+(r?": "+r:""),l_holds:e=>`Reviewed, desire “${e}”: ripening`,l_again:n=>`${n} more days of rest`,l_unGrow:"Taken out of growing, back to rest",l_rest:"Back to rest",
+  l_grow:(d,r)=>"Growing"+(d?", harvest due "+d:"")+(r?", replacing: "+r:""),l_end:(l,to,n)=>l+(to?", handed to "+to:"")+(n?": "+n:""),l_resow:(a,b)=>`Started again (previous cycle ${a} to ${b})`,l_date:(k,v)=>`Date changed: ${k} → ${v||"none"}`,
+  untitled:"Untitled idea",
+  md_refl:"Reflections",md_out:"Outcome",md_links:"Links",md_log:"Log",md_handed:x=>"Handed to "+x+". ",md_ideaPh:"The idea in one sentence",md_sown:"Added",
+  dash:"Novale dashboard. Requires the Dataview community plugin.",dashFile:"_Novale dashboard",tplDir:"_Templates",tplFile:"Novale idea",
+  dv_due:"To review",dv_grow:"Growing",dv_ready:"Ready to grow",dv_rest:"Waiting",dv_harv:"Harvested",dv_comp:"Composted",
+  dvc:{desire:"Desire",sown:"Added",review:"Review on",growing:"Growing since",due:"Harvest due",days:"Days",reviewed:"Reviewed",harvested:"Harvested",handed:"Handed to",cycle:"Cycle (d)",composted:"Composted",life:"Life (d)"},
+  p_idea:"Idea",p_sown:d=>"Added on "+d,p_sownBlank:"Added on ___ / ___ / ______",p_review:d=>"Review on "+d,p_reviewBlank:"Review on ___ / ___",p_desireRev:"Desire at review",p_ripen:"Ripening",
+  p_grow:"Growing from __/__ · harvest due __/__",p_harv:"Harvested __/__",p_comp:"Composted __/__",p_help:"Print on A6 landscape (148 × 105 mm), double-sided, or several per page in the print options.",p_title:"Novale cards",p_blankFile:"Novale blank cards",p_file:"Card"
+}};
+const QUESTIONS=[
+  {k:"probleme",ess:true,fr:["Quel problème, pour qui ?","Une personne ou un service précis, pas « tout le monde »."],en:["What problem, for whom?","A specific person or team, not “everyone”."]},
+  {k:"fini",ess:true,fr:["À quoi ressemble la récolte ?","Une phrase vérifiable. Par exemple : « utilisé par un service pendant un mois »."],en:["What does the harvest look like?","One checkable sentence. For example: “used by one team for a month”."]},
+  {k:"test",ess:true,fr:["Le plus petit test, en une heure ?","Ce que tu peux faire pour savoir si ça vaut la peine, sans rien construire."],en:["The smallest test, in one hour?","What you can do to learn if it's worth it, without building anything."]},
+  {k:"remplace",ess:true,fr:["Qu'est-ce que ça remplace ?","Le projet que tu arrêtes, transmets ou ralentis pour lui faire de la place."],en:["What does it replace?","The project you stop, hand over or slow down to make room."]},
+  {k:"porteur",fr:["Qui pourrait la porter à ta place ?","Ta force est de semer. Qui la mènera jusqu'à la récolte ?"],en:["Who could carry it instead of you?","Your strength is starting things. Who will carry it to the finish?"]},
+  {k:"jamais",fr:["Et si tu ne la faisais jamais ?","Si la réponse est « rien de grave », c'est une information."],en:["What if you never did it?","If the answer is “nothing much”, that tells you something."]}
+];
+const RECUL={
+  fr:["Qu'est-ce qui est vraiment neuf, ici ?","Est-ce que quelque chose de proche existe déjà, chez toi ou ailleurs ?","Qui devra la maintenir dans deux ans, et qu'en dirait cette personne ?","Si tu ne pouvais y consacrer qu'une heure, que ferais-tu ?","Qu'est-ce qui t'attire : le problème ou la solution ?","Quelle version de cette idée un collègue pourrait-il lancer sans toi ?","Qu'est-ce qui la ferait échouer à coup sûr ?","Que perds-tu si tu attends trois mois ?","À quelle idée déjà notée ressemble-t-elle ?","Qui serait déçu si tu la réalisais ?","Quelle décision faudrait-il obtenir, et de qui ?","Qu'aurais-tu besoin de croire pour qu'elle vaille la peine ?"],
+  en:["What is really new here?","Does something similar already exist, at your place or elsewhere?","Who will have to maintain it in two years, and what would they say?","If you could give it only one hour, what would you do?","What draws you: the problem or the solution?","Which version of this idea could a colleague launch without you?","What would make it fail for sure?","What do you lose by waiting three months?","Which idea already noted does it resemble?","Who would be disappointed if you did it?","Which decision would you need, and from whom?","What would you need to believe for it to be worth it?"]
+};
+const STATUTS=["jachere","cultivee","recoltee","compostee"];
+const MK={repos:"mk-j",due:"mk-due",prete:"mk-p",jachere:"mk-j",cultivee:"mk-c",recoltee:"mk-r",compostee:"mk-x"};
+const EVMK={semee:"mk-j",relire:"mk-f",relue:"mk-p",cultivee:"mk-c",prevue:"mk-f",recoltee:"mk-r",compostee:"mk-x"};
+const STEPRANK={semee:0,relire:1,relue:2,cultivee:3,prevue:4,recoltee:5,compostee:5};
+const EXPORT_STATUS={jachere:"resting",cultivee:"growing",recoltee:"harvested",compostee:"composted"};
+const IMPORT_STATUS={resting:"jachere",fallow:"jachere",growing:"cultivee",harvested:"recoltee",composted:"compostee"};
+
+/* ---------- Utilitaires ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
+let LANG=(()=>{const s=lsGet("novale.lang");if(s==="fr"||s==="en")return s;return /^fr/i.test(navigator.language||"")?"fr":"en"})();
+const t=(k,...a)=>{const v=I18N[LANG][k]??I18N.fr[k];return typeof v==="function"?v(...a):v};
+const Q=q=>q[LANG]||q.fr;
+const ENVIE=()=>t("envie");
+const pad=n=>String(n).padStart(2,"0");
+const iso=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const today=()=>iso(new Date());
+const isD=s=>/^\d{4}-\d{2}-\d{2}$/.test(String(s||""));
+const parseD=s=>{const [y,m,d]=String(s).split("-").map(Number);return new Date(y,(m||1)-1,d||1)};
+const addDays=(s,n)=>{const d=parseD(s);d.setDate(d.getDate()+n);return iso(d)};
+const addMonths=(s,n)=>{const d=parseD(s);d.setMonth(d.getMonth()+n);return iso(d)};
+const diff=(a,b)=>Math.round((parseD(b)-parseD(a))/864e5);
+const fr=s=>isD(s)?parseD(s).toLocaleDateString(t("locale"),{day:"numeric",month:"short"}):"";
+const frLong=s=>isD(s)?parseD(s).toLocaleDateString(t("locale"),{day:"numeric",month:"long",year:"numeric"}):"";
+const monthName=s=>{const x=parseD(s).toLocaleDateString(t("locale"),{month:"long",year:"numeric"});return x.charAt(0).toUpperCase()+x.slice(1)};
+const jours=n=>t("day",n);
+const uid=()=>"i"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const clampE=v=>{const n=Math.round(+v);return n>0?Math.min(4,n):0};
+const titleFrom=x=>{x=String(x||"").trim().replace(/\s+/g," ");if(x.length<=60)return x.replace(/[.!?]$/,"");const c=x.slice(0,60);return c.slice(0,c.lastIndexOf(" ")>30?c.lastIndexOf(" "):60)+"…"};
+const fileName=x=>(String(x||"Idea").replace(/[\\/:*?"<>|#^\[\]]/g,"").replace(/\s+/g," ").trim().slice(0,90)||"Idea");
+let toastT;
+function toast(msg){const el=$("#toast");el.textContent=msg;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,2800)}
+
+/* ---------- Modèle ---------- */
+function normalize(raw){
+  if(!raw)return raw;
+  const o={...raw};const d={...(o.dates||{})};
+  const jd=re=>{const j=(o.journal||[]).find(x=>re.test(x.t));return j?j.d:""};
+  d.semee=isD(d.semee)?d.semee:(isD(o.cree)?o.cree:today());
+  if(!isD(d.relire))d.relire=isD(o.relire)?o.relire:"";
+  ["relue","cultivee","prevue","recoltee","compostee"].forEach(k=>{if(!isD(d[k]))d[k]=""});
+  if(IMPORT_STATUS[o.statut])o.statut=IMPORT_STATUS[o.statut];
+  switch(o.statut){
+    case "mure":o.statut="jachere";d.relue=d.relue||jd(/^Relue/)||today();break;
+    case "active":o.statut="cultivee";d.relue=d.relue||jd(/^Relue/);d.cultivee=d.cultivee||jd(/^Démarrée/)||today();break;
+    case "terminee":case "transmise":
+      d.cultivee=d.cultivee||jd(/^Démarrée/);d.recoltee=d.recoltee||(isD(o.issue?.d)?o.issue.d:today());o.bilan=o.bilan||o.issue?.note||"";
+      if(o.statut==="transmise")o.transmiseA=o.transmiseA||o.issue?.a||"";o.statut="recoltee";break;
+    case "cultivee":d.cultivee=d.cultivee||today();break;
+    case "recoltee":d.recoltee=d.recoltee||today();break;
+    case "compostee":d.compostee=d.compostee||(isD(o.issue?.d)?o.issue.d:today());o.bilan=o.bilan||o.issue?.note||"";break;
+    default:o.statut="jachere";
+  }
+  if(o.statut==="jachere"&&!d.relue&&!d.relire)d.relire=addDays(d.semee,Store.prefs.rest);
+  o.dates=d;delete o.cree;delete o.relire;delete o.issue;
+  o.envie=clampE(o.envie)||3;o.envieRelue=o.envieRelue?clampE(o.envieRelue)||null:null;
+  o.q=o.q||{};o.reflexions=o.reflexions||[];o.liens=o.liens||[];o.tags=o.tags||[];o.journal=o.journal||[];
+  o.bilan=o.bilan||"";o.transmiseA=o.transmiseA||"";o.titre=o.titre||titleFrom(o.idee)||t("untitled");o.kind="idee";o.v=2;
+  return o;
+}
+const stage=i=>{if(i.statut!=="jachere")return i.statut;if(i.dates.relue)return "prete";return i.dates.relire&&diff(i.dates.relire,today())>=0?"due":"repos"};
+const isDue=i=>stage(i)==="due";
+const cultivees=()=>Store.all().filter(i=>i.statut==="cultivee");
+const ripeness=i=>QUESTIONS.filter(q=>q.ess&&(i.q[q.k]||"").trim()).length;
+const log=(i,x)=>{i.journal.push({d:today(),t:x})};
+const endDate=i=>i.dates.recoltee||i.dates.compostee||"";
+function durations(i){
+  const d=i.dates,end=endDate(i)||today(),out=[];
+  if(d.relue)out.push([t("d_rest"),diff(d.semee,d.relue)]);
+  else if(i.statut==="jachere")out.push([t("d_rest"),diff(d.semee,today())]);
+  if(d.cultivee)out.push([t("d_grow"),diff(d.cultivee,end)]);
+  out.push([endDate(i)?t("d_full"):t("d_since"),diff(d.semee,end)]);
+  return out;
+}
+function newIdea(text,envie){
+  const n=today();
+  const i=normalize({id:uid(),titre:titleFrom(text),idee:text.trim(),envie,statut:"jachere",dates:{semee:n,relire:addDays(n,Store.prefs.rest)}});
+  log(i,t("l_sown",ENVIE()[i.envie]));return i;
+}
+
+/* ---------- Stockage ---------- */
+const LSKEY="novale.v1",LSOLD="jachere.v1";
+const Store={
+  mode:"local",items:new Map(),prefs:{rest:7,limit:3},col:null,timers:{},dirty:new Set(),ready:false,
+  clamp(){this.prefs.limit=Math.min(3,Math.max(1,Math.round(+this.prefs.limit)||3))},
+  loadLocal(){try{const raw=JSON.parse(lsGet(LSKEY)||lsGet(LSOLD)||"{}");if(raw.prefs)Object.assign(this.prefs,raw.prefs);this.clamp();(raw.items||[]).forEach(i=>{const n=normalize(i);this.items.set(n.id,n)})}catch(e){}},
+  saveLocal(){lsSet(LSKEY,JSON.stringify({items:[...this.items.values()],prefs:this.prefs}))},
+  async init(){
+    this.loadLocal();
+    let db=null,user=null,id=null;
+    try{if(!STANDALONE){[db,user]=await Promise.all([claude.use("db"),claude.use("user")]);if(user)id=await user.id()}}catch(e){db=null}
+    if(db&&id){
+      this.col=db.collection("data/users/"+id);this.mode="db";
+      const localItems=[...this.items.values()];this.items=new Map();let first=true;
+      this.col.onSnapshot(snap=>{
+        const next=new Map();
+        snap.docs.forEach(d=>{const v=d.data();if(!v)return;if(d.id==="prefs"){Object.assign(this.prefs,v);this.clamp();return}if(v.kind==="idee")next.set(d.id,normalize({...v,id:d.id}))});
+        this.dirty.forEach(k=>{if(this.items.has(k))next.set(k,this.items.get(k))});
+        this.items=next;
+        if(first){first=false;if(next.size===0&&localItems.length)UI.offerMigrate(localItems)}
+        this.ready=true;UI.render();if(UI.openId&&!UI.typing())UI.renderSheet(true);
+      },err=>{this.status=t("st_dbErr",err.code);this.mode="local";this.loadLocal();UI.render()});
+      this.status="st_db";
+    }else{this.ready=true;this.status="st_local";UI.render()}
+    UI.renderStatus();
+  },
+  all(){return [...this.items.values()]},
+  get(id){return this.items.get(id)},
+  put(item,{now=false}={}){
+    item.kind="idee";item.v=2;item.maj=Date.now();this.items.set(item.id,item);
+    if(this.mode==="db"){
+      this.dirty.add(item.id);clearTimeout(this.timers[item.id]);
+      const go=()=>{const clean=JSON.parse(JSON.stringify(item));delete clean._er;this.col.doc(item.id).set(clean).then(()=>this.dirty.delete(item.id)).catch(e=>{this.dirty.delete(item.id);toast(t("t_notSaved",e&&e.code==="quota_exceeded"))})};
+      now?go():this.timers[item.id]=setTimeout(go,700);
+    }else this.saveLocal();
+  },
+  removeAll(){[...this.items.keys()].forEach(id=>this.remove(id));this.saveLocal&&this.mode!=="db"&&this.saveLocal()},
+  remove(id){this.items.delete(id);if(this.mode==="db"){clearTimeout(this.timers[id]);this.dirty.delete(id);this.col.doc(id).delete().catch(()=>toast(t("t_delFail")))}else this.saveLocal()},
+  setPrefs(p){Object.assign(this.prefs,p);if(this.mode==="db")this.col.doc("prefs").set({...this.prefs,kind:"prefs"}).catch(()=>{});else this.saveLocal()}
+};
+
+/* ---------- Markdown (Obsidian) ---------- */
+const yq=v=>{v=String(v??"");return /^[\w\- àâäçéèêëîïôöùûüÿœæÀ-ÿ'.]*$/.test(v)&&v.trim()===v&&!/^(true|false|null|yes|no|\d)/i.test(v)?v:JSON.stringify(v)};
+function toMd(i){
+  const titles=new Map(Store.all().map(x=>[x.id,x.titre]));const d=i.dates;
+  const fm=["---","id: "+i.id,"type: idea","status: "+EXPORT_STATUS[i.statut],"desire: "+i.envie,"desire_review: "+(i.envieRelue??""),
+    "added: "+d.semee,"review: "+(i.statut==="jachere"&&!d.relue?d.relire:""),"reviewed: "+d.relue,"growing: "+d.cultivee,"harvest_due: "+d.prevue,"harvested: "+d.recoltee,"composted: "+d.compostee];
+  if(i.transmiseA)fm.push("handed_to: "+yq(i.transmiseA));
+  fm.push("tags:","  - idea","  - "+EXPORT_STATUS[i.statut]);
+  i.tags.forEach(x=>fm.push("  - "+x.replace(/\s+/g,"-")));
+  fm.push("---","");
+  const out=[...fm,"# "+i.titre,"","> "+String(i.idee||"").replace(/\n/g,"\n> "),""];
+  QUESTIONS.forEach(q=>out.push("## "+Q(q)[0],"",(i.q[q.k]||"").trim(),""));
+  if(i.reflexions.length){out.push("## "+t("md_refl"),"");i.reflexions.forEach(r=>out.push("- **"+r.q+"** "+r.r.replace(/\n/g," ")+" ("+r.d+")"));out.push("")}
+  if(i.bilan||i.transmiseA)out.push("## "+t("md_out"),"",(i.transmiseA?t("md_handed",i.transmiseA):"")+i.bilan,"");
+  out.push("## "+t("md_links"),"");i.liens.filter(l=>titles.has(l)).forEach(l=>out.push("- [["+fileName(titles.get(l))+"]]"));out.push("");
+  out.push("## "+t("md_log"),"");i.journal.forEach(j=>out.push("- "+j.d+" · "+j.t));out.push("");
+  return out.join("\n").replace(/\n{3,}/g,"\n\n");
+}
+function unq(v){v=String(v).trim();if(/^".*"$/.test(v)){try{return JSON.parse(v)}catch(e){}}if(/^'.*'$/.test(v))return v.slice(1,-1);return v}
+function norm(s){return String(s).toLowerCase().replace(/[«»“”"'’ ?]/g,"").normalize("NFD").replace(/[̀-ͯ]/g,"")}
+const anySec=(secs,names)=>{const k=Object.keys(secs).find(s=>names.some(n=>norm(n)===norm(s)));return k?secs[k].join("\n").trim():""};
+const anyLines=(secs,names)=>{const k=Object.keys(secs).find(s=>names.some(n=>norm(n)===norm(s)));return k?secs[k]:[]};
+function fromMd(text){
+  text=String(text).replace(/\r\n?/g,"\n").replace(/^\s*<!--[^\n]*-->\s*\n/,"").trim()+"\n";
+  const fm={};let body=text;const m=text.match(/^---\n([\s\S]*?)\n---\n?/);
+  if(m){body=text.slice(m[0].length);let lastKey=null;
+    m[1].split("\n").forEach(line=>{const li=line.match(/^\s+-\s+(.*)$/);if(li&&lastKey){(fm[lastKey]=Array.isArray(fm[lastKey])?fm[lastKey]:[]).push(unq(li[1]));return}
+      const kv=line.match(/^([\w\-éèà]+):\s*(.*)$/);if(kv){lastKey=kv[1];fm[kv[1]]=kv[2]===""?"":unq(kv[2])}})}
+  let titre="",idee=[],sec=null;const secs={};
+  body.split("\n").forEach(l=>{
+    if(!titre&&/^#\s+/.test(l)){titre=l.replace(/^#\s+/,"").trim();return}
+    const h=l.match(/^##\s+(.*)$/);if(h){sec=h[1].trim();secs[sec]=[];return}
+    if(sec===null){if(/^>\s?/.test(l))idee.push(l.replace(/^>\s?/,""));else if(l.trim()&&titre&&!idee.length)idee.push(l);return}
+    secs[sec].push(l);
+  });
+  const q={};QUESTIONS.forEach(x=>{const names=[x.fr[0],x.en[0]];if(x.k==="fini")names.push("À quoi ressemble « fini » ?");const v=anySec(secs,names);if(v)q[x.k]=v});
+  const journal=anyLines(secs,["Journal","Log"]).map(l=>l.match(/^-\s+(\d{4}-\d{2}-\d{2})\s+·\s+(.*)$/)).filter(Boolean).map(x=>({d:x[1],t:x[2]}));
+  const reflexions=anyLines(secs,["Réflexions","Reflections"]).map(l=>l.match(/^-\s+\*\*(.+?)\*\*\s+(.*?)(?:\s+\((\d{4}-\d{2}-\d{2})\))?$/)).filter(Boolean).map(x=>({q:x[1],r:x[2],d:x[3]||today()}));
+  const linkTitles=anyLines(secs,["Liens","Links"]).map(l=>(l.match(/\[\[([^\]|#]+)/)||[])[1]).filter(Boolean);
+  const skip=["idea","idee","idée","jachere","mure","active","terminee","transmise",...STATUTS,...Object.keys(IMPORT_STATUS)];
+  const tags=(Array.isArray(fm.tags)?fm.tags:[]).filter(x=>!skip.includes(x));
+  const handed=fm.handed_to||fm.transmise_a||"";
+  let bilan=anySec(secs,["Bilan","Outcome"])||anySec(secs,["Issue"]).replace(/^[^:]*:\s*/,"");
+  if(handed)bilan=bilan.replace(/^(Transmise à|Handed to) [^.]*\.\s*/,"");
+  const raw={id:fm.id&&/^[\w-]+$/.test(fm.id)?fm.id:uid(),titre:titre||titleFrom(idee.join(" ")),idee:idee.join("\n").trim(),envie:fm.desire||fm.envie,envieRelue:fm.desire_review||fm.envie_relue||null,
+    statut:fm.status||fm.statut||"jachere",
+    dates:{semee:fm.added||fm.sown||fm.semee||fm.cree,relire:fm.review||fm.relire,relue:fm.reviewed||fm.relue,cultivee:fm.growing||fm.cultivee,prevue:fm.harvest_due||fm.recolte_prevue,recoltee:fm.harvested||fm.recoltee,compostee:fm.composted||fm.compostee},
+    issue:fm.fin?{d:fm.fin,a:handed,note:bilan}:null,transmiseA:handed,bilan,q,reflexions,tags,journal};
+  const n=normalize(raw);n._linkTitles=linkTitles;return n;
+}
+function importMany(texts){
+  let added=0,updated=0;const parsed=texts.map(fromMd);
+  parsed.forEach(p=>{const ex=Store.get(p.id);if(ex){p.liens=ex.liens;updated++}else added++;Store.items.set(p.id,p)});
+  const byTitle=new Map(Store.all().map(x=>[fileName(x.titre).toLowerCase(),x.id]));
+  parsed.forEach(p=>{const it=Store.get(p.id);if(p._linkTitles&&p._linkTitles.length)it.liens=[...new Set(p._linkTitles.map(x=>byTitle.get(x.toLowerCase())).filter(x=>x&&x!==it.id))];delete it._linkTitles;Store.put(it,{now:true})});
+  UI.render();toast(t("t_import",added,updated));
+}
+
+/* ---------- Fiches papier ---------- */
+function ficheHtml(list){
+  const lines=n=>'<div class="lines" style="height:'+(n*7)+'mm"></div>';
+  const sq=v=>[1,2,3,4].map(k=>'<span class="o'+(k===v?" pick":k<v?" on":"")+'"></span>').join("");
+  const page=i=>{
+    const blank=!i;i=i||{titre:"",idee:"",q:{},envie:0,dates:{}};const d=i.dates||{};
+    const recto='<section class="card"><div class="hd"><span>'+esc(t("p_idea"))+'</span><span>'+esc(blank?t("p_sownBlank"):t("p_sown",frLong(d.semee)))+'</span></div>'+
+      '<h1>'+(blank?"":esc(i.titre))+'</h1>'+(blank?lines(5):'<p class="idea">'+esc(i.idee)+'</p>')+
+      '<div class="ft"><span>'+esc(t("desire"))+' '+sq(i.envie||0)+'</span><span>'+esc(blank||!d.relire?t("p_reviewBlank"):t("p_review",fr(d.relire)))+'</span><span>'+esc(t("p_desireRev"))+' '+sq(0)+'</span></div></section>';
+    const verso='<section class="card"><div class="hd"><span>'+esc(t("p_ripen"))+'</span><span>'+(blank?"":esc(i.titre))+'</span></div>'+
+      QUESTIONS.map(q=>'<div class="q"><b>'+esc(Q(q)[0])+'</b>'+((i.q[q.k]||"").trim()?'<p>'+esc(i.q[q.k])+'</p>':lines(1))+'</div>').join("")+
+      '<div class="ft"><span><i class="m c"></i>'+esc(t("p_grow"))+'</span><span><i class="m r"></i>'+esc(t("p_harv"))+'</span><span><i class="m x"></i>'+esc(t("p_comp"))+'</span></div></section>';
+    return recto+verso;
+  };
+  const pages=(list&&list.length?list:[null,null]).map(page).join("");
+  return '<!doctype html><html lang="'+LANG+'"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(t("p_title"))+'</title><style>'+
+  '@page{size:148mm 105mm;margin:0}*{box-sizing:border-box}body{margin:0;font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;color:#0B0B0B;background:#ddd}'+
+  '.card{width:148mm;height:105mm;padding:6mm 8mm;background:#fff;margin:6mm auto;break-after:page;page-break-after:always;display:flex;flex-direction:column;gap:2mm;overflow:hidden}'+
+  '.hd{display:flex;justify-content:space-between;font:700 7pt "Helvetica Neue",Helvetica,Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;border-bottom:.3mm solid #0B0B0B;padding-bottom:2mm}'+
+  '.hd span:first-child::before{content:"Novale";margin-right:2mm}.hd span:first-child::after{content:"";display:inline-block;width:2.2mm;height:2.2mm;margin-left:1.5mm;vertical-align:-.2mm;border:.2mm solid #CFCBC7;box-shadow:2.8mm 0 0 -.0mm #fff,2.8mm 0 0 .2mm #CFCBC7,5.6mm 0 0 0 #fff,5.6mm 0 0 .2mm #CFCBC7,8.6mm 0 0 0 #fff,8.6mm 0 0 .25mm #E2231A;margin-right:9mm}'+
+  'h1{font:700 15pt "Helvetica Neue",Helvetica,Arial,sans-serif;letter-spacing:-.01em;margin:2mm 0 0;min-height:7mm}.idea{font-size:11pt;margin:0;line-height:7mm;flex:1}'+
+  '.lines{background:repeating-linear-gradient(to bottom,transparent 0 6.8mm,#E4E1DE 6.8mm 7mm)}.q{display:flex;flex-direction:column;font-size:8.5pt}.q p{margin:0;line-height:1.3;max-height:9mm;overflow:hidden}'+
+  '.ft{margin-top:auto;display:flex;flex-wrap:wrap;gap:2mm 5mm;font:7.5pt "Helvetica Neue",Helvetica,Arial,sans-serif;align-items:center}'+
+  '.o{display:inline-block;width:3.2mm;height:3.2mm;border:.25mm solid #CFCBC7;margin-left:.8mm;vertical-align:-.5mm}.o.on{background:#E9E6E3}.o.pick{background:#E2231A;border-color:#E2231A}'+
+  '.m{display:inline-block;width:2.6mm;height:2.6mm;margin-right:1.2mm;vertical-align:-.3mm}.m.c{background:#E9E6E3;border:.25mm solid #6A6663}.m.r{background:#0B0B0B}.m.x{border:.25mm solid #6A6663;background:linear-gradient(to top right,transparent 45%,#6A6663 45%,#6A6663 55%,transparent 55%)}'+
+  '.help{max-width:148mm;margin:6mm auto 0;font-size:10pt}@media print{body{background:#fff}.card{margin:0}.help{display:none}}'+
+  '</style></head><body><p class="help">'+esc(t("p_help"))+'</p>'+pages+'</body></html>';
+}
+
+/* ---------- Copie et enregistrement ---------- */
+let downloads=null;
+const STANDALONE=!(window.claude&&typeof window.claude.use==="function");
+const canSave=()=>!!downloads||STANDALONE;
+async function copyText(text,label){
+  try{await navigator.clipboard.writeText(text);toast(label)}
+  catch(e){UI.aux(`<div class="dhead"><span class="pill">${esc(t("manualCopy"))}</span><button class="close" type="button" data-x aria-label="${esc(t("close"))}">×</button></div><p class="muted" style="margin:0">${esc(t("manualCopyP"))}</p><div class="copybox"><label for="cpTa" class="sr">${esc(t("manualCopy"))}</label><textarea id="cpTa" readonly>${esc(text)}</textarea></div>`);const ta=$("#cpTa");ta.focus();ta.select()}
+}
+async function save(filename,data){
+  if(!downloads){
+    if(!STANDALONE)return false;
+    try{const blob=data instanceof Blob?data:new Blob([data],{type:/\.html$/.test(filename)?"text/html":"text/markdown"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=filename;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);return true}catch(e){return false}
+  }
+  try{await downloads.save({filename,data});return true}
+  catch(e){if(e&&e.code==="declined")return false;toast(e&&e.code==="rate_limited"?t("t_busy"):t("t_saveFail"));return false}
+}
+function loadJSZip(){return new Promise((res,rej)=>{if(window.JSZip)return res(window.JSZip);const s=document.createElement("script");s.src="vendor/jszip.min.js";s.onload=()=>res(window.JSZip);s.onerror=rej;document.head.appendChild(s)})}
+function dashboard(){
+  const c=t("dvc"),DV=(h,q)=>"## "+h+"\n\n```dataview\n"+q+"\n```\n\n";
+  return "---\ntype: dashboard\n---\n# Novale\n\n"+t("dash")+"\n\n"+
+  DV(t("dv_due"),`TABLE desire AS "${c.desire}", added AS "${c.sown}", review AS "${c.review}"\nFROM #idea\nWHERE status = "resting" AND !reviewed AND date(review) <= date(today)\nSORT review ASC`)+
+  DV(t("dv_grow"),`TABLE growing AS "${c.growing}", harvest_due AS "${c.due}", (date(today) - date(growing)).days AS "${c.days}"\nFROM #idea\nWHERE status = "growing"\nSORT harvest_due ASC`)+
+  DV(t("dv_ready"),`TABLE desire_review AS "${c.desire}", reviewed AS "${c.reviewed}"\nFROM #idea\nWHERE status = "resting" AND reviewed`)+
+  DV(t("dv_rest"),`TABLE added AS "${c.sown}", review AS "${c.review}"\nFROM #idea\nWHERE status = "resting" AND !reviewed AND date(review) > date(today)\nSORT review ASC`)+
+  DV(t("dv_harv"),`TABLE harvested AS "${c.harvested}", handed_to AS "${c.handed}", (date(harvested) - date(added)).days AS "${c.cycle}"\nFROM #idea\nWHERE status = "harvested"\nSORT harvested DESC`)+
+  DV(t("dv_comp"),`TABLE composted AS "${c.composted}", (date(composted) - date(added)).days AS "${c.life}"\nFROM #idea\nWHERE status = "composted"\nSORT composted DESC`);
+}
+function template(){
+  return ["---","type: idea","status: resting","desire: ","desire_review: ","added: {{date:YYYY-MM-DD}}","review: ","reviewed: ","growing: ","harvest_due: ","harvested: ","composted: ","tags:","  - idea","  - resting","---","","# {{title}}","","> "+t("md_ideaPh"),"",...QUESTIONS.flatMap(q=>["## "+Q(q)[0],"",""]),"## "+t("md_links"),"","## "+t("md_log"),"","- {{date:YYYY-MM-DD}} · "+t("md_sown"),""].join("\n");
+}
+
+/* ---------- Interface ---------- */
+const TABS=[["jachere","mk-j"],["cultivee","mk-c"],["archives","mk-r"],["chrono","mk-f"]];
+const FILTERS={jachere:[["tout","f_toutes"],["due","f_due"],["prete","f_prete"],["repos","f_repos"]],archives:[["tout","f_tout"],["recoltee","f_recoltee"],["compostee","f_compostee"]],chrono:[["tout","f_tout"],["avenir","f_avenir"],["mois","f_mois"]]};
+const COMPACT="(max-width:759px),(max-height:520px)";
+const compact=()=>window.matchMedia(COMPACT).matches;
+const wide=()=>!compact();
+const VERSION="1.0.0";
+const UI={
+  capEnvie:0,openId:null,recul:{},showForm:null,sub:"cycle",
+  tab:(()=>{const x=lsGet("novale.tab");return TABS.some(y=>y[0]===x)?x:"jachere"})(),
+  filt:{jachere:"tout",archives:"tout",chrono:"tout"},
+  applyStatic(){
+    document.documentElement.lang=LANG;
+    document.querySelectorAll("[data-i]").forEach(el=>{el.textContent=t(el.dataset.i)});
+    document.querySelectorAll("[data-ph]").forEach(el=>{el.placeholder=t(el.dataset.ph)});
+    document.querySelectorAll("[data-i-aria]").forEach(el=>{el.setAttribute("aria-label",t(el.dataset.iAria))});
+    $("#logoBtn").setAttribute("aria-label","Novale · "+t("today"));$("#bnav").setAttribute("aria-label",t("tabsAria"));$("#sowChoices").setAttribute("aria-label",t("desire"));
+    $("#aboutP").textContent=t("aboutP",VERSION);this.renderSowChoices();this.renderWipe();this.renderInstall();
+    $("#tabs").setAttribute("aria-label",t("tabsAria"));$("#detail").setAttribute("aria-label",t("detailAria"));$("#options").setAttribute("aria-label",t("options"));
+    $("#setLang").value=LANG;
+    const r=String(Store.prefs.rest);$("#setRest").innerHTML=[3,7,14,30].map(n=>`<option value="${n}">${esc(t("restOpt",n))}</option>`).join("");$("#setRest").value=r;
+    this.renderStatus();this.renderCap();
+  },
+  renderStatus(){const s=Store.status||"";$("#storeStatus").textContent=s.startsWith("st_")?t(s):s},
+  typing(){const a=document.activeElement;return a&&$("#detail").contains(a)&&/INPUT|TEXTAREA/.test(a.tagName)},
+  dotsHtml(val,name){val=clampE(val);const E=ENVIE();return [1,2,3,4].map(n=>`<button type="button" class="dot${n===val?" pick":""}" data-${name}="${n}" aria-pressed="${n<=val}" aria-label="${esc(t("envieAria",E[n],n))}" title="${esc(E[n])}"></button>`).join("")+`<span class="elab">${esc(val?E[val]:t("choose"))}</span>`},
+  mini(v){v=clampE(v);return `<span class="mini" aria-label="${esc(t("desire")+" : "+(ENVIE()[v]||t("envieNone")))}">`+[1,2,3,4].map(n=>`<i class="${n<=v?"on":""}"></i>`).join("")+`</span>`},
+  renderCap(){$("#capDots").innerHTML=this.dotsHtml(this.capEnvie,"cap")},
+  renderSlots(){
+    const n=cultivees().length,L=Store.prefs.limit,j=Store.all().filter(i=>i.statut==="jachere").length;
+    $("#slots").title=t("slotsTitle",n,L,j);$("#logoBtn").title=t("slotsTitle",n,L,j);
+    $("#mark").innerHTML=[0,1,2].map(k=>`<span class="box${k<Math.min(n,L)?" on":k>=L?" off":""}"></span>`).join("")+'<span class="box fallow"></span>';
+    $("#slotsLbl").textContent=t("slotsLbl",n,L,j);
+  },
+  card(i){
+    const s=stage(i),d=i.dates;let k="",big="",foot="";
+    const kk=(x,red)=>`<span class="k${red?" red":""}"><span class="mk ${MK[s]}"></span>${esc(x)}</span>`;
+    const B=(n,l)=>`<span class="big">${n}<small>${esc(l)}</small></span>`;
+    if(s==="repos"){const tot=Math.max(1,diff(d.semee,d.relire)),left=Math.max(0,diff(today(),d.relire));
+      k=kk(t("c_sown",fr(d.semee)));big=B(left,t("c_rest"));
+      foot=`<span class="bar" aria-label="${esc(t("c_restBar",tot-left,tot))}"><b style="width:${Math.round((tot-left)/tot*100)}%"></b></span><span>${esc(t("c_review",fr(d.relire)))}</span>`}
+    else if(s==="due"){const n=diff(d.relire,today());k=kk(t("st_due"),true);big=B(n>0?"+"+n:"0",n>0?t("c_late"):t("c_today"));foot=`<span>${esc(t("c_sown",fr(d.semee)))}</span>`}
+    else if(s==="prete"){k=kk(t("c_reviewed",fr(d.relue)));big=B(ripeness(i)+"/4",t("c_ready"))}
+    else if(s==="cultivee"){k=kk(t("c_growing",fr(d.cultivee)));big=B(diff(d.cultivee,today()),t("c_growDays"));
+      if(d.prevue){const left=diff(today(),d.prevue);foot=left<0?`<span class="late">${esc(t("c_hLate",jours(-left)))}</span>`:`<span>${esc(t("c_hDue",fr(d.prevue))+(left<=14?t("c_in",jours(left)):""))}</span>`}}
+    else if(s==="recoltee"){k=kk(t("c_harvested",fr(d.recoltee)));big=B(d.cultivee?diff(d.cultivee,d.recoltee):diff(d.semee,d.recoltee),d.cultivee?t("c_growDays"):t("c_cycle"));if(i.transmiseA)foot=`<span>${esc(t("c_handed",i.transmiseA))}</span>`}
+    else{k=kk(t("c_composted",fr(d.compostee)));big=B(diff(d.semee,d.compostee),t("c_life"))}
+    const tags=i.tags.slice(0,3).map(x=>"#"+esc(x)).join(" ");
+    const showIdea=i.idee.trim().replace(/[.!?…]$/,"")!==i.titre.replace(/…$/,"");
+    return `<button type="button" class="card" data-open="${i.id}"${i.id===this.openId?' aria-current="true"':""}>${k}${big}<h3>${esc(i.titre)}</h3>${showIdea?`<p>${esc(i.idee)}</p>`:""}<div class="foot">${this.mini(i.envie)}${foot}${tags?`<span>${tags}</span>`:""}</div></button>`;
+  },
+  searched(){
+    const q=($("#search")?.value||"").trim().toLowerCase();let all=Store.all();
+    if(q)all=all.filter(i=>(i.titre+" "+i.idee+" "+i.tags.join(" ")+" "+Object.values(i.q).join(" ")+" "+i.bilan+" "+i.transmiseA).toLowerCase().includes(q));
+    return all;
+  },
+  render(){
+    this.renderSlots();$("#setLimit").value=String(Store.prefs.limit);$("#setRest").value=String(Store.prefs.rest);
+    this.renderTabs();this.renderBnav();this.renderFilters();this.renderList();this.renderAlerts();
+    if(!this.openId)this.renderToday();
+    $("#zipBtn").hidden=!canSave();
+  },
+  renderTabs(){
+    const a=Store.all(),c={jachere:a.filter(i=>i.statut==="jachere").length,cultivee:cultivees().length,archives:a.filter(i=>i.statut==="recoltee"||i.statut==="compostee").length};
+    $("#tabs").innerHTML=TABS.map(([k,mk])=>`<button type="button" class="tab" role="tab" id="tab-${k}" data-tab="${k}" aria-selected="${this.tab===k}" aria-controls="list"><span class="mk ${mk}"></span>${esc(t("tab_"+k))}${c[k]!=null?` <span class="n">${c[k]}</span>`:""}</button>`).join("");
+    $("#list").setAttribute("aria-labelledby","tab-"+this.tab);
+  },
+  plot(title,text,sow){return sow?`<button type="button" class="plot" data-sow><span class="plus" aria-hidden="true">+</span><span><b>${esc(title)}</b>${esc(text)}</span></button>`:`<div class="plot"><span><b>${esc(title)}</b>${esc(text)}</span></div>`},
+  installEvt:null,
+  renderInstall(){
+    const el=$("#installBox");
+    const installed=window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+    const can=STANDALONE&&/^https?:$/.test(location.protocol)&&!installed;
+    el.hidden=!can;if(!can)return;
+    const ios=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+    el.innerHTML=`<span class="lab">${esc(t("i_title"))}</span><p>${esc(t("i_p"))}</p>`+(this.installEvt?`<div class="acts"><button class="btn small primary" type="button" id="installBtn">${esc(t("i_btn"))}</button></div>`:`<p>${esc(ios?t("i_ios"):t("i_other"))}</p>`);
+  },
+  wipeStep:0,
+  renderWipe(){
+    const n=Store.all().length,st=this.wipeStep,el=$("#wipeBox");
+    let h=`<span class="lab">${esc(t("w_title"))}</span>`;
+    if(st===0)h+=`<p>${esc(t("w_p"))}</p><div class="acts"><button class="btn small danger-btn" type="button" data-wipe="1">${esc(t("w_btn"))}</button></div>`;
+    if(st===1)h+=`<p class="warn">${esc(t("w_1",n))}</p><p>${esc(t("w_1b"))}</p><div class="acts"><button class="btn small danger-btn" type="button" data-wipe="2">${esc(t("w_cont"))}</button><button class="btn small ghost" type="button" data-wipe="0">${esc(t("cancel"))}</button></div>`;
+    if(st===2)h+=`<p class="warn">${esc(t("w_2"))}</p><div class="acts"><button class="btn small danger-btn" type="button" data-wipe="3">${esc(t("w_cont2"))}</button><button class="btn small ghost" type="button" data-wipe="0">${esc(t("cancel"))}</button></div>`;
+    if(st===3)h+=`<p class="warn">${esc(t("w_3",t("w_word")))}</p><label class="sr" for="wipeWord">${esc(t("w_input"))}</label><input type="text" id="wipeWord" autocomplete="off" autocapitalize="characters" spellcheck="false"><div class="acts"><button class="btn small danger-btn" type="button" data-wipe="go" id="wipeGo" disabled>${esc(t("w_final"))}</button><button class="btn small ghost" type="button" data-wipe="0">${esc(t("cancel"))}</button></div>`;
+    el.innerHTML=h;
+  },
+  renderBnav(){
+    const a=Store.all(),due=a.filter(isDue).length,late=cultivees().filter(i=>i.dates.prevue&&diff(i.dates.prevue,today())>0).length;
+    const c={jachere:a.filter(i=>i.statut==="jachere").length,cultivee:cultivees().length,archives:a.filter(i=>i.statut==="recoltee"||i.statut==="compostee").length};
+    const tb=([k,mk])=>{const badge=(k==="jachere"&&due)||(k==="cultivee"&&late);return `<button type="button" role="tab" data-tab="${k}" aria-selected="${this.tab===k}" aria-label="${esc(t("bnAria",t("tab_"+k),c[k],k==="jachere"?due:0))}"><span class="ic"><span class="mk ${mk}"></span>${badge?'<span class="badge" aria-hidden="true"></span>':""}</span><span>${esc(t("bn_"+k))}${c[k]!=null?` <span class="n">${c[k]}</span>`:""}</span></button>`};
+    $("#bnav").innerHTML=tb(TABS[0])+tb(TABS[1])+`<button type="button" class="sow" data-sow><span class="plus" aria-hidden="true">+</span><span>${esc(t("bn_sow"))}</span></button>`+tb(TABS[2])+tb(TABS[3]);
+  },
+  renderSowChoices(){const E=ENVIE();$("#sowChoices").innerHTML=[1,2,3,4].map(n=>`<button type="button" data-sowe="${n}" aria-pressed="${this.capEnvie===n}"><i aria-hidden="true"></i>${esc(E[n])}</button>`).join("")},
+  openSow(){this.capEnvie=0;this.renderSowChoices();$("#sowText").value="";const d=$("#sowDlg");if(!d.open)d.showModal();setTimeout(()=>$("#sowText").focus(),30)},
+  legendHtml(){return `<div class="legend">
+        <div><span class="mk mk-j"></span><span><b>${esc(t("lgJ"))}</b><p>${esc(t("lgJp",Store.prefs.rest))}</p></span></div>
+        <div><span class="mk mk-c"></span><span><b>${esc(t("lgC"))}</b><p>${esc(t("lgCp",Store.prefs.limit))}</p></span></div>
+        <div><span class="mk mk-r"></span><span><b>${esc(t("lgR"))}</b><p>${esc(t("lgRp"))}</p></span></div>
+        <div><span class="mk mk-x"></span><span><b>${esc(t("lgX"))}</b><p>${esc(t("lgXp"))}</p></span></div></div>`},
+  showToday(){if(this.openId){const i=Store.get(this.openId);if(i)delete i._er}this.openId=null;this.renderToday();this.renderList();const el=$("#detail");el.scrollTop=0;if(compact())el.classList.add("open")},
+  renderFilters(){
+    const all=Store.all(),inTab={jachere:all.filter(i=>i.statut==="jachere").length,cultivee:0,archives:all.filter(i=>i.statut==="recoltee"||i.statut==="compostee").length,chrono:all.length}[this.tab];
+    const f=inTab>=5?FILTERS[this.tab]:null,a=this.searched();
+    if(!f&&this.filt[this.tab]&&this.filt[this.tab]!=="tout")this.filt[this.tab]="tout";
+    const cnt=k=>{
+      if(this.tab==="jachere")return a.filter(i=>i.statut==="jachere"&&(k==="tout"||stage(i)===k)).length;
+      if(this.tab==="archives")return a.filter(i=>(i.statut==="recoltee"||i.statut==="compostee")&&(k==="tout"||i.statut===k)).length;
+      return null;
+    };
+    const chips=f?`<div class="fls" role="group" aria-label="${esc(t("filterAria"))}">${f.map(([k,l])=>{const n=cnt(k);return `<button type="button" class="fl" data-filt="${k}" aria-pressed="${this.filt[this.tab]===k}">${esc(t(l))}${n!=null?` <span class="c">${n}</span>`:""}</button>`}).join("")}</div>`:"";
+    const old=$("#search"),val=old?old.value:"",had=document.activeElement===old;
+    const show=Store.all().length>=7||val;
+    $("#filters").innerHTML=chips+(show?`<label for="search" class="sr">${esc(t("search"))}</label><input id="search" class="search" type="search" placeholder="${esc(t("search"))}" value="${esc(val)}">`:"");
+    if(had&&$("#search")){const s=$("#search");s.focus();s.setSelectionRange(val.length,val.length)}
+  },
+  renderList(){
+    const el=$("#list"),a=this.searched(),tb=this.tab,f=this.filt[tb];let h="";el.classList.remove("cols2");
+    if(tb==="chrono")h=this.chronoHtml(a,f);
+    else{
+      let list;
+      if(tb==="jachere"){const o={due:0,prete:1,repos:2};list=a.filter(i=>i.statut==="jachere"&&(f==="tout"||stage(i)===f)).sort((x,y)=>o[stage(x)]-o[stage(y)]||String(x.dates.relire||x.dates.relue).localeCompare(String(y.dates.relire||y.dates.relue)))}
+      else if(tb==="cultivee")list=cultivees().filter(i=>a.includes(i)).sort((x,y)=>String(x.dates.prevue||"9999").localeCompare(String(y.dates.prevue||"9999")));
+      else list=a.filter(i=>(i.statut==="recoltee"||i.statut==="compostee")&&(f==="tout"||i.statut===f)).sort((x,y)=>endDate(y).localeCompare(endDate(x)));
+      h=list.map(i=>this.card(i)).join("");
+      if(tb==="cultivee"&&!$("#search")?.value)h+=Array.from({length:Math.max(0,Store.prefs.limit-list.length)},()=>`<div class="plot slot"><span class="plus" aria-hidden="true"></span><span>${esc(t("free"))}</span></div>`).join("");
+      if(!list.length&&tb!=="cultivee"){
+        const filtered=(f&&f!=="tout")||$("#search")?.value;
+        if(!Store.ready)h=`<p class="empty">${esc(t("loading"))}</p>`;
+        else if(filtered)h=`<p class="empty">${esc(t("emptyFilter"))}</p>`;
+        else if(tb==="jachere")h=this.plot(Store.all().length?t("e_next"):t("e_first"),Store.all().length?t("e_nextP"):t("e_firstP",Store.prefs.rest),true);
+        else h=this.plot(t("e_arch"),t("e_archP"),false);
+      }
+      if(list.length>=8&&window.matchMedia("(min-width:1500px)").matches)el.classList.add("cols2");
+    }
+    el.innerHTML=h;
+  },
+  chronoHtml(a,f){
+    const ev=[],n=today(),m=n.slice(0,7);
+    a.forEach(i=>{const d=i.dates;
+      ["semee","relue","cultivee","recoltee","compostee"].forEach(k=>{if(d[k])ev.push({d:d[k],k,i})});
+      if(stage(i)==="repos"&&d.relire)ev.push({d:d.relire,k:"relire",i});
+      if(i.statut==="cultivee"&&d.prevue)ev.push({d:d.prevue,k:"prevue",i});
+    });
+    const isFut=e=>(e.k==="relire"||e.k==="prevue")&&e.d>n;
+    let fut=ev.filter(isFut).sort((x,y)=>x.d.localeCompare(y.d));
+    let past=ev.filter(e=>!isFut(e)).sort((x,y)=>y.d.localeCompare(x.d)||STEPRANK[y.k]-STEPRANK[x.k]);
+    if(f==="avenir")past=[];
+    if(f==="mois"){fut=fut.filter(e=>e.d.slice(0,7)===m);past=past.filter(e=>e.d.slice(0,7)===m)}
+    let h='<div class="chrono">';
+    if(fut.length)h+=`<section><h2><span>${esc(t("upcoming"))}</span><span>${fut.length}</span></h2>${fut.map(e=>this.evRow(e)).join("")}</section>`;
+    const g=new Map();past.forEach(e=>{const k=e.d.slice(0,7);if(!g.has(k))g.set(k,[]);g.get(k).push(e)});
+    g.forEach((list,k)=>{h+=`<section><h2><span>${esc(monthName(k+"-01"))}</span><span>${list.length}</span></h2>${list.map(e=>this.evRow(e)).join("")}</section>`});
+    if(!fut.length&&!past.length)h+=Store.all().length?`<p class="empty">${esc(t("noDates"))}</p>`:this.plot(t("e_chrono"),t("e_chronoP"),false);
+    return h+'</div>';
+  },
+  evRow(e,label,mk){const late=e.k==="prevue"&&e.d<today();return `<button type="button" class="ev" data-open="${e.i.id}"><span class="d">${esc(fr(e.d))}</span><span class="s"><span class="mk ${mk||(late?"mk-due":EVMK[e.k])}"></span>${esc(label||(late?t("ev_late"):t("ev_"+e.k)))}</span><span class="t">${esc(e.i.titre)}</span></button>`},
+  renderAlerts(){
+    const due=Store.all().filter(isDue).length,late=cultivees().filter(i=>i.dates.prevue&&diff(i.dates.prevue,today())>0).length;
+    let h="";
+    if(this._migrate)h+=`<button type="button" class="alert" data-migrate>${esc(t("migrate",this._migrate.length))}</button>`;
+    const todayVisible=wide()&&!this.openId;
+    if(due&&!todayVisible)h+=`<button type="button" class="alert" data-goto="jachere:due"><span class="mk mk-due"></span>${esc(t("aDue",due))}</button>`;
+    if(late&&!todayVisible)h+=`<button type="button" class="alert" data-goto="cultivee:tout"><span class="mk mk-c"></span>${esc(t("aLate",late))}</button>`;
+    $("#alertsIn").innerHTML=h;$("#alerts").hidden=!h;
+  },
+  renderToday(){
+    const el=$("#detail"),n=today(),m=n.slice(0,7),all=Store.all();
+    if(!all.length){
+      el.innerHTML=`<div class="today">${compact()?`<div class="dhead"><span class="pill">${esc(t("today"))}</span><button class="close" type="button" data-close aria-label="${esc(t("close"))}">×</button></div>`:""}<h2>${esc(t("lgTitle"))}</h2>${this.legendHtml()}</div>`;return;
+    }
+    const ev={semee:0,cultivee:0,recoltee:0,compostee:0};all.forEach(i=>Object.keys(ev).forEach(k=>{if(i.dates[k]&&i.dates[k].slice(0,7)===m)ev[k]++}));
+    const due=all.filter(isDue),late=cultivees().filter(i=>i.dates.prevue&&i.dates.prevue<n);
+    const fut=[];all.forEach(i=>{if(stage(i)==="repos"&&i.dates.relire>n)fut.push({d:i.dates.relire,k:"relire",i});if(i.statut==="cultivee"&&i.dates.prevue>n)fut.push({d:i.dates.prevue,k:"prevue",i})});
+    fut.sort((x,y)=>x.d.localeCompare(y.d));
+    const stat=(v,l,mk)=>`<div class="stat"><b>${v}</b><span><span class="mk ${mk}"></span>${esc(l)}</span></div>`;
+    let h=`<div class="today">${compact()?`<div class="dhead"><span class="pill">${esc(t("today"))}</span><button class="close" type="button" data-close aria-label="${esc(t("close"))}">×</button></div>`:""}<h2>${esc(t("todayH",frLong(n)))}</h2>`;
+    h+=`<section><span class="lab muted">${esc(monthName(n))}</span><div class="stats">${stat(ev.semee,t("sSown"),"mk-j")}${stat(ev.cultivee,t("sGrown"),"mk-c")}${stat(ev.recoltee,t("sHarv"),"mk-r")}${stat(ev.compostee,t("sComp"),"mk-x")}</div></section>`;
+    if(due.length)h+=`<section><span class="lab" style="color:var(--red)">${esc(t("tDue"))}</span>${due.map(i=>this.evRow({d:i.dates.relire,k:"relire",i},t("ev_dueNow"),"mk-due")).join("")}</section>`;
+    if(late.length)h+=`<section><span class="lab">${esc(t("tLate"))}</span>${late.map(i=>this.evRow({d:i.dates.prevue,k:"prevue",i})).join("")}</section>`;
+    h+=`<section><span class="lab muted">${esc(t("tNext"))}</span>${fut.length?fut.slice(0,6).map(e=>this.evRow(e)).join(""):`<p class="muted" style="margin:6px 0 0">${esc(t("tNone"))}</p>`}</section>`;
+    el.innerHTML=h+'</div>';
+  },
+  aux(html){$("#auxBody").innerHTML=html;const d=$("#aux");if(!d.open)d.showModal()},
+  offerMigrate(list){this._migrate=list},
+
+  /* ---- Fiche ---- */
+  open(id){
+    const i=Store.get(id);if(!i)return;
+    this.openId=id;this.showForm=null;this.sub=(stage(i)==="prete"&&ripeness(i)<4)?"questions":"cycle";
+    this.renderSheet();const el=$("#detail");el.classList.add("open");el.scrollTop=0;
+    document.querySelectorAll(".card[aria-current]").forEach(c=>c.removeAttribute("aria-current"));
+    document.querySelectorAll(`.card[data-open="${id}"]`).forEach(c=>c.setAttribute("aria-current","true"));
+    if(!wide())$("#detail .close")?.focus();
+  },
+  close(){
+    const i=Store.get(this.openId);if(i){if(!i.titre.trim()){i.titre=titleFrom(i.idee)||t("untitled");Store.put(i,{now:true})}delete i._er}
+    const id=this.openId;this.openId=null;$("#detail").classList.remove("open");this.render();
+    if(id)document.querySelector(`.card[data-open="${id}"]`)?.focus();
+  },
+  timeline(i){
+    const d=i.dates,s=stage(i),n=today(),rows=[];
+    const add=(key,label,mk,val,opt={})=>rows.push({key,label,mk,val,future:!!opt.future,edit:opt.edit!==false});
+    add("semee",t("ev_semee"),"mk-j",d.semee);
+    if(d.relue)add("relue",t("ev_relue"),"mk-p",d.relue);
+    else if(i.statut==="jachere")add("relire",s==="due"?t("tl_dueNow"):t("ev_relire"),s==="due"?"mk-due":"mk-f",d.relire,{future:s!=="due"});
+    if(d.cultivee)add("cultivee",t("ev_cultivee"),"mk-c",d.cultivee);
+    else if(i.statut==="jachere")add("cultivee",t("ev_cultivee"),"mk-f","",{future:true,edit:false});
+    if(i.statut==="cultivee"||(i.statut==="recoltee"&&d.prevue)){const late=i.statut==="cultivee"&&d.prevue&&d.prevue<n;add("prevue",late?t("tl_late"):t("ev_prevue"),late?"mk-due":"mk-f",d.prevue,{future:i.statut==="cultivee"})}
+    if(i.statut==="recoltee")add("recoltee",t("ev_recoltee"),"mk-r",d.recoltee);
+    else if(i.statut==="compostee")add("compostee",t("ev_compostee"),"mk-x",d.compostee);
+    else add("fin",t("tl_end"),"mk-f","",{future:true,edit:false});
+    const li=r=>`<li class="${r.future?"future":""}"><span class="mk ${r.mk}"></span><span class="lbl">${esc(r.label)}</span>`+
+      (r.edit?`<label class="sr" for="tl_${r.key}">${esc(t("dateOf",r.label))}</label><input type="date" id="tl_${r.key}" data-date="${r.key}" value="${esc(r.val||"")}">`:`<span class="nodate">—</span>`)+'</li>';
+    const durs=durations(i).map(([l,v])=>`<span>${esc(l)} <b>${esc(jours(v))}</b></span>`).join("");
+    return `<section class="field" aria-label="${esc(t("datesAria"))}"><ol class="tl">${rows.map(li).join("")}</ol><div class="durs">${durs}</div></section>`;
+  },
+  nextBar(i){
+    const s=stage(i),d=i.dates,r=ripeness(i),L=Store.prefs.limit,full=cultivees().length>=L,end=endDate(i),S=t("steps"),E=ENVIE(),form=this.showForm;
+    const steps=[[S[0],true],[S[1],!!d.relue||!!d.cultivee],[S[2],(!!d.relue&&r===4)||!!d.cultivee],[S[3],!!d.cultivee],[i.statut==="compostee"?t("stepComp"):S[4],!!end]];
+    let cur=steps.findIndex(x=>!x[1]);if(i.statut==="compostee")cur=4;
+    const ol=`<ol class="steps" aria-label="${esc(t("stepsAria"))}">`+steps.map(([l,done],k)=>`<li class="${done?"done":""}${k===cur?" cur":""}${i.statut==="compostee"&&k===4?" x":""}"${k===cur?' aria-current="step"':""}>${esc(l)}</li>`).join("")+'</ol>';
+    const btn=(act,label,pri,dis)=>`<button class="btn small${pri?" primary":""}" type="button" data-act="${act}"${dis?" disabled":""}>${esc(label)}</button>`;
+    const comp=btn("form:compostee",t("compost"));
+    let txt="",acts="",extra="";
+    if(s==="repos"){txt=t("n_rest",esc(frLong(d.relire)),esc(jours(diff(today(),d.relire))));acts=btn("early",t("n_restBtn"))+comp}
+    else if(s==="due"){const er=i._er||0;txt=t("n_due",esc(frLong(d.semee)),esc(E[i.envie]));
+      extra=`<div class="envie" role="group" aria-labelledby="fEnvRLbl"><span id="fEnvRLbl" class="lab">${esc(t("b_desireToday"))}</span><div class="dots">${this.dotsHtml(er,"envr")}</div></div>`+(er?`<p class="feedback">${er<=2?t("b_low"):er<i.envie?t("b_less"):t("b_holds")}</p>`:"");
+      acts=btn("ripen",t("b_holdsBtn"),true,!er)+btn("again",t("b_again",Store.prefs.rest))+comp}
+    else if(s==="prete"&&r<4){txt=t("n_ripen",r);acts=`<button class="btn small primary" type="button" data-sub="questions">${esc(t("n_ripenBtn"))}</button>`+btn("rest",t("b_restAgain"))+comp}
+    else if(s==="prete"){txt=full?t("n_readyFull",L):t("n_ready",L);if(full)extra=`<div class="chips">${cultivees().map(x=>`<button class="chip" type="button" data-open="${x.id}">${esc(x.titre)}</button>`).join("")}</div>`;acts=btn("form:cultivee",t("n_grow"),true,full)+btn("rest",t("b_restAgain"))+comp}
+    else if(s==="cultivee"){txt=t("n_growing",esc(jours(diff(d.cultivee,today()))),d.prevue?esc(fr(d.prevue)):"");if(i.q.fini)extra=`<p class="feedback"><b>${esc(t("b_harvestIs"))}</b> ${esc(i.q.fini)}</p>`;acts=btn("form:recoltee",t("n_harvest"),true)+comp+btn("rest",t("b_backFallow"))}
+    else{txt=t("n_end",esc(t("st_"+s)),esc(frLong(end)),esc(jours(diff(d.semee,end))));acts=btn("resow",t("n_resow"))}
+    let f="";
+    if(form==="early")f=`<div class="inline-form"><div class="field"><label for="fPresse">${esc(t("earlyQ"))}</label><p class="hint">${esc(t("earlyH"))}</p><textarea id="fPresse" rows="2"></textarea></div><div class="actions">${btn("earlyGo",t("earlyGo"),true)}<button class="btn small ghost" type="button" data-act="cancel">${esc(t("earlyNo"))}</button></div></div>`;
+    if(form==="cultivee")f=`<div class="inline-form"><div class="field"><label for="fPrevue">${esc(t("f_due_lbl"))}</label><p class="hint">${esc(t("f_dueH"))}</p><input type="date" id="fPrevue" value=""></div><div class="chips"><button type="button" class="chip" data-prev="14">${esc(t("f_2w"))}</button><button type="button" class="chip" data-prevm="1">${esc(t("f_1m"))}</button><button type="button" class="chip" data-prevm="3">${esc(t("f_3m"))}</button></div><div class="actions">${btn("go:cultivee",t("f_growGo"),true)}<button class="btn small ghost" type="button" data-act="cancel">${esc(t("cancel"))}</button></div></div>`;
+    if(form==="recoltee"||form==="compostee"){const R=form==="recoltee";
+      f=`<div class="inline-form">${R?`<div class="field"><label for="fA">${esc(t("f_handed"))}</label><p class="hint">${esc(t("f_handedH"))}</p><input type="text" id="fA"></div>`:""}<div class="field"><label for="fNote">${esc(R?t("b_gave"):t("b_kept"))}</label><p class="hint">${esc(R?t("f_gaveH"):t("f_keptH"))}</p><textarea id="fNote"></textarea></div><div class="actions">${btn("go:"+form,R?t("f_harvGo"):t("f_compGo"),true)}<button class="btn small ghost" type="button" data-act="cancel">${esc(t("cancel"))}</button></div></div>`}
+    return `<div class="next">${ol}<p class="feedback">${txt}</p>${extra}${f||`<div class="actions">${acts}</div>`}</div>`;
+  },
+  closedBlock(i){
+    const s=stage(i);if(s!=="recoltee"&&s!=="compostee")return "";
+    return `<div class="field"><label for="fBilan">${esc(s==="recoltee"?t("b_gave"):t("b_kept"))}</label>${i.transmiseA?`<p class="hint">${esc(t("c_handed",i.transmiseA))}</p>`:""}<textarea id="fBilan" data-f="bilan">${esc(i.bilan)}</textarea></div>`;
+  },
+  renderSheet(keepScroll){
+    const i=Store.get(this.openId);if(!i)return;
+    const el=$("#detail"),st=el.scrollTop,s=stage(i),sub=this.sub,r=ripeness(i),E=ENVIE();
+    const others=Store.all().filter(x=>x.id!==i.id&&(x.statut==="jachere"||x.statut==="cultivee"));
+    let h=`<div class="dhead"><span class="pill"><span class="mk ${MK[s]}"></span>${esc(i.statut==="jachere"?t("st_jachere")+" · "+t("st_"+s):t("st_"+s))}</span><button class="close" type="button" data-close aria-label="${esc(t("close"))}">×</button></div><div class="sheet">`;
+    h+=`<div class="field title"><label for="fTitre" class="sr">${esc(t("title"))}</label><input type="text" id="fTitre" data-f="titre" value="${esc(i.titre)}"></div>`;
+    h+=`<div class="field idea"><label for="fIdee" class="sr">${esc(t("idea"))}</label><textarea id="fIdee" data-f="idee" rows="2">${esc(i.idee)}</textarea></div>`;
+    h+=`<div class="envie" role="group" aria-labelledby="fEnvLbl"><span id="fEnvLbl" class="lab">${esc(t("desire"))}</span><div class="dots">${this.dotsHtml(i.envie,"env")}</div>${i.envieRelue?`<span class="lab muted">${esc(t("desireRev",E[i.envieRelue]))}</span>`:""}</div>`;
+    h+=this.nextBar(i);
+    h+=`<div class="subtabs" role="tablist" aria-label="${esc(t("subAria"))}">${[["cycle",t("sub_cycle")],["questions",t("sub_q",r)],["notes",t("sub_notes")]].map(([k,l])=>`<button type="button" class="tab" role="tab" data-sub="${k}" aria-selected="${sub===k}">${esc(l)}</button>`).join("")}</div><div class="pane" role="tabpanel">`;
+    if(sub==="cycle")h+=this.closedBlock(i)+this.timeline(i);
+    if(sub==="questions"){
+      h+='<div class="q">'+QUESTIONS.map(q=>`<div class="field"><label for="q_${q.k}"${q.ess?` class="ess" data-ess="${esc(t("ess"))}"`:""}>${esc(Q(q)[0])}</label><p class="hint">${esc(Q(q)[1])}</p><textarea id="q_${q.k}" data-q="${q.k}" rows="2">${esc(i.q[q.k]||"")}</textarea></div>`).join("")+'</div>';
+      if(i.statut==="jachere"||i.statut==="cultivee"){const R=RECUL[LANG];const k=this.recul[i.id]??Math.floor(Math.random()*R.length);this.recul[i.id]=k;
+        h+=`<div class="recul"><span class="lab muted">${esc(t("recul"))}</span><span class="qq" id="rq">${esc(R[k])}</span><label for="rA" class="sr">${esc(t("recul"))}</label><textarea id="rA" rows="2" placeholder="${esc(t("reculPh"))}"></textarea><div class="actions"><button class="btn small" type="button" data-act="reculSave">${esc(t("reculSave"))}</button><button class="btn small ghost" type="button" data-act="reculNext">${esc(t("reculNext"))}</button></div></div>`}
+      if(i.reflexions.length)h+=`<div class="field"><span class="lab2">${esc(t("reflections"))}</span><ul class="jl">${i.reflexions.map(x=>`<li><span class="d">${esc(fr(x.d))}</span><span><b>${esc(x.q)}</b> ${esc(x.r)}</span></li>`).join("")}</ul></div>`;
+      if(s==="prete"&&r===4)h+=`<div><button class="btn small primary" type="button" data-sub="cycle">${esc(t("allFour"))}</button></div>`;
+    }
+    if(sub==="notes"){
+      h+=`<div class="field"><span class="lab2" id="lnkLbl">${esc(t("linked"))}</span><p class="hint">${esc(t("linkedH"))}</p><div class="chips" role="group" aria-labelledby="lnkLbl">${others.length?others.map(o=>`<button type="button" class="chip" data-link="${o.id}" aria-pressed="${i.liens.includes(o.id)}">${esc(o.titre)}</button>`).join(""):`<span class="muted" style="font-size:14px">${esc(t("noLinks"))}</span>`}</div></div>`;
+      h+=`<div class="field"><label for="fTags">${esc(t("tags"))}</label><p class="hint">${esc(t("tagsH"))}</p><input type="text" id="fTags" data-f="tags" value="${esc(i.tags.join(", "))}"></div>`;
+      h+=`<div class="actions"><button class="btn small" type="button" data-act="copyMd">${esc(t("copyMd"))}</button>${canSave()?`<button class="btn small" type="button" data-act="saveMd">${esc(t("saveMd"))}</button><button class="btn small" type="button" data-act="savePaper">${esc(t("savePaper"))}</button>`:""}</div>`;
+      h+=`<div class="field"><span class="lab2">${esc(t("log"))}</span><ul class="jl">${i.journal.slice().reverse().map(j=>`<li><span class="d">${esc(fr(j.d))}</span><span>${esc(j.t)}</span></li>`).join("")}</ul></div>`;
+      h+=this.showForm==="del"?`<div class="inline-form"><p style="margin:0">${t("delQ")}</p><div class="actions"><button class="btn small" type="button" data-act="delGo" style="border-color:var(--red);color:var(--red)">${esc(t("del"))}</button><button class="btn small ghost" type="button" data-act="cancel">${esc(t("keep"))}</button></div></div>`:`<div><button class="btn small ghost danger" type="button" data-act="del">${esc(t("delIdea"))}</button></div>`;
+    }
+    h+='</div></div>';
+    el.innerHTML=h;if(keepScroll)el.scrollTop=st;
+  },
+  act(a){
+    const i=Store.get(this.openId);if(!i)return;const d=i.dates,R=Store.prefs.rest,L=Store.prefs.limit,E=ENVIE();
+    const keep=msg=>{Store.put(i,{now:true});this.render();this.renderSheet(true);if(msg)toast(msg)};
+    if(a==="early"){this.showForm="early";this.renderSheet(true);setTimeout(()=>$("#fPresse")?.focus(),40);return}
+    if(a==="cancel"){this.showForm=null;return this.renderSheet(true)}
+    if(a==="earlyGo"){const r=$("#fPresse").value.trim();log(i,t("l_early",r));d.relire=today();this.showForm=null;keep();setTimeout(()=>$("#detail .next .dot")?.focus(),40);return}
+    if(a==="ripen"){i.envieRelue=i._er;delete i._er;d.relue=today();log(i,t("l_holds",E[i.envieRelue]));this.sub="questions";Store.put(i,{now:true});this.render();this.renderSheet();$("#detail").scrollTop=0;setTimeout(()=>$("#q_probleme")?.focus(),60);return}
+    if(a==="again"){d.relire=addDays(today(),R);delete i._er;log(i,t("l_again",R));return keep(t("t_reviewOn",frLong(d.relire)))}
+    if(a==="rest"){const was=i.statut;i.statut="jachere";d.relue="";d.cultivee="";d.prevue="";d.relire=addDays(today(),R);log(i,was==="cultivee"?t("l_unGrow"):t("l_rest"));return keep(t("t_restUntil",frLong(d.relire)))}
+    if(a.startsWith("form:")){this.showForm=a.slice(5);this.renderSheet(true);setTimeout(()=>{const el=$("#fPrevue")||$("#fA")||$("#fNote");if(el){el.scrollIntoView({block:"center"});el.focus()}},40);return}
+    if(a==="go:cultivee"){if(cultivees().length>=L)return toast(t("t_full"));const p=$("#fPrevue").value;
+      i.statut="cultivee";d.cultivee=today();d.prevue=isD(p)?p:"";log(i,t("l_grow",d.prevue,i.q.remplace));this.showForm=null;
+      return keep(t("t_growing",cultivees().length,L))}
+    if(a==="go:recoltee"||a==="go:compostee"){const k=a.slice(3),note=$("#fNote").value.trim(),to=$("#fA")?.value.trim()||"";
+      delete i._er;i.statut=k;d[k]=today();i.bilan=note;if(k==="recoltee")i.transmiseA=to;
+      log(i,t("l_end",t("st_"+k),to,note));this.showForm=null;return keep(t("t_done",t("st_"+k),frLong(today())))}
+    if(a==="resow"){log(i,t("l_resow",d.semee,endDate(i)));i.statut="jachere";i.dates={semee:today(),relire:addDays(today(),R),relue:"",cultivee:"",prevue:"",recoltee:"",compostee:""};i.transmiseA="";return keep(t("t_resown",frLong(i.dates.relire)))}
+    if(a==="reculNext"){const n=RECUL[LANG].length;this.recul[i.id]=(this.recul[i.id]+1+Math.floor(Math.random()*(n-1)))%n;$("#rq").textContent=RECUL[LANG][this.recul[i.id]];return}
+    if(a==="reculSave"){const r=$("#rA").value.trim();if(!r){$("#rA").focus();return}i.reflexions.push({q:RECUL[LANG][this.recul[i.id]],r,d:today()});this.recul[i.id]=(this.recul[i.id]+1)%RECUL[LANG].length;return keep(t("t_refl"))}
+    if(a==="copyMd")return copyText(toMd(i),t("t_copiedNote"));
+    if(a==="saveMd")return save(fileName(i.titre)+".md",toMd(i)).then(ok=>ok&&toast(t("t_saved")));
+    if(a==="savePaper")return save(t("p_file")+" - "+fileName(i.titre)+".html",ficheHtml([i])).then(ok=>ok&&toast(t("t_print")));
+    if(a==="del"){this.showForm="del";return this.renderSheet(true)}
+    if(a==="delGo"){Store.remove(i.id);this.openId=null;$("#detail").classList.remove("open");this.render();return toast(t("t_deleted"))}
+  }
+};
+
+/* ---------- Événements ---------- */
+document.addEventListener("click",e=>{
+  const o=$("#options");if(!o.hidden&&!e.target.closest("#options")&&!e.target.closest("#optBtn")){o.hidden=true;$("#optBtn").setAttribute("aria-expanded","false");if(UI.wipeStep){UI.wipeStep=0;UI.renderWipe()}}
+  const b=e.target.closest("button");if(!b)return;
+  if(b.dataset.cap){UI.capEnvie=+b.dataset.cap;UI.renderCap();return}
+  if(b.id==="installBtn"&&UI.installEvt){const ev=UI.installEvt;ev.prompt();ev.userChoice.then(r=>{if(r&&r.outcome==="accepted"){UI.installEvt=null;toast(t("i_done"))}UI.renderInstall()}).catch(()=>{});return}
+  if(b.dataset.wipe){
+    const v=b.dataset.wipe;
+    if(v==="go"){if(($("#wipeWord").value||"").trim().toUpperCase()!==t("w_word"))return;Store.removeAll();UI.openId=null;UI._migrate=null;$("#detail").classList.remove("open");UI.wipeStep=0;UI.renderWipe();UI.render();toast(t("w_done"));return}
+    if(v==="1"&&!Store.all().length){toast(t("w_empty"));return}
+    UI.wipeStep=+v;UI.renderWipe();if(v==="3")setTimeout(()=>$("#wipeWord")?.focus(),30);else $(`#wipeBox [data-wipe]`)?.focus();return}
+  if(b.dataset.sowe){UI.capEnvie=+b.dataset.sowe;UI.renderSowChoices();return}
+  if(b.hasAttribute("data-sow")){if(compact())UI.openSow();else $("#capText").focus();return}
+  if(b.id==="logoBtn"){UI.showToday();return}
+  if(b.dataset.open){UI.open(b.dataset.open);return}
+  if(b.dataset.tab){UI.tab=b.dataset.tab;lsSet("novale.tab",UI.tab);if(compact()&&$("#detail").classList.contains("open")){UI.openId=null;$("#detail").classList.remove("open")}UI.render();$("#list").scrollTop=0;return}
+  if(b.dataset.filt){UI.filt[UI.tab]=b.dataset.filt;UI.render();$("#list").scrollTop=0;return}
+  if(b.dataset.goto){const [tb,f]=b.dataset.goto.split(":");UI.tab=tb;if(UI.filt[tb])UI.filt[tb]=f;UI.render();return}
+  if(b.dataset.sub){UI.sub=b.dataset.sub;UI.showForm=null;UI.renderSheet(true);return}
+  if(b.hasAttribute("data-close")){UI.close();return}
+  if(b.hasAttribute("data-x")){b.closest("dialog").close();return}
+  if(b.hasAttribute("data-migrate")){(UI._migrate||[]).forEach(i=>Store.put(i,{now:true}));UI._migrate=null;UI.render();toast(t("t_migrated"));return}
+  const i=Store.get(UI.openId);
+  if(b.dataset.prev){$("#fPrevue").value=addDays(today(),+b.dataset.prev);return}
+  if(b.dataset.prevm){$("#fPrevue").value=addMonths(today(),+b.dataset.prevm);return}
+  if(b.dataset.env&&i){i.envie=+b.dataset.env;Store.put(i);UI.renderSheet(true);UI.render();return}
+  if(b.dataset.envr&&i){i._er=+b.dataset.envr;UI.renderSheet(true);return}
+  if(b.dataset.link&&i){const id=b.dataset.link;i.liens=i.liens.includes(id)?i.liens.filter(x=>x!==id):[...i.liens,id];b.setAttribute("aria-pressed",String(i.liens.includes(id)));Store.put(i);return}
+  if(b.dataset.act){UI.act(b.dataset.act);return}
+});
+document.addEventListener("keydown",e=>{
+  const tl=e.target.closest&&e.target.closest('[role="tablist"]');
+  if(tl&&(e.key==="ArrowRight"||e.key==="ArrowLeft"||e.key==="Home"||e.key==="End")){const tabs=[...tl.querySelectorAll('[role="tab"]')];let k=tabs.indexOf(e.target);if(k<0)return;e.preventDefault();k=e.key==="Home"?0:e.key==="End"?tabs.length-1:(k+(e.key==="ArrowRight"?1:-1)+tabs.length)%tabs.length;const id=tabs[k].dataset.tab||tabs[k].dataset.sub,attr=tabs[k].dataset.tab?"data-tab":"data-sub";tabs[k].click();document.querySelector(`[role="tablist"] [${attr}="${id}"]`)?.focus();return}
+  if(e.key==="Escape"){const o=$("#options");if(!o.hidden){o.hidden=true;$("#optBtn").setAttribute("aria-expanded","false");$("#optBtn").focus();if(UI.wipeStep){UI.wipeStep=0;UI.renderWipe()}return}if(!$("#aux").open&&!$("#sowDlg").open&&$("#detail").classList.contains("open"))UI.close();else if(UI.openId&&!$("#aux").open&&!$("#sowDlg").open)UI.close()}});
+$("#options").addEventListener("input",e=>{if(e.target.id==="wipeWord"){$("#wipeGo").disabled=e.target.value.trim().toUpperCase()!==t("w_word")}});
+$("#filters").addEventListener("input",e=>{if(e.target.id==="search"){UI.renderList();UI.renderFilters()}});
+const D=$("#detail");
+D.addEventListener("input",e=>{
+  const i=Store.get(UI.openId);if(!i)return;const el=e.target,f=el.dataset.f;
+  if(f==="titre"||f==="idee"||f==="bilan"){i[f]=el.value;Store.put(i);if(f!=="bilan")UI.renderList()}
+  else if(f==="tags"){i.tags=el.value.split(",").map(s=>s.trim().replace(/^#/,"")).filter(Boolean);Store.put(i);UI.renderList()}
+  else if(el.dataset.q){i.q[el.dataset.q]=el.value;Store.put(i)}
+});
+D.addEventListener("change",e=>{
+  const el=e.target;if(!el.dataset||!el.dataset.date)return;const i=Store.get(UI.openId);if(!i)return;
+  const k=el.dataset.date,v=el.value;
+  if(!isD(v)&&k!=="prevue"){el.value=i.dates[k]||"";return toast(t("t_dateReq"))}
+  i.dates[k]=isD(v)?v:"";log(i,t("l_date",t("ev_"+k),v));
+  Store.put(i,{now:true});UI.render();UI.renderSheet(true);
+});
+D.addEventListener("focusout",e=>{if(e.target.dataset&&e.target.dataset.q){const i=Store.get(UI.openId);if(!i)return;const tab=D.querySelector('.subtabs [data-sub="questions"]');if(tab)tab.textContent=t("sub_q",ripeness(i));UI.renderList()}});
+$("#aux").addEventListener("click",e=>{if(e.target.id==="aux")$("#aux").close()});
+
+function sow(ta,firstDot){
+  const v=ta.value.trim();
+  if(!v){ta.focus();toast(t("t_wrote"));return false}
+  if(!UI.capEnvie){firstDot()?.focus();toast(t("t_desire"));return false}
+  const i=newIdea(v,UI.capEnvie);Store.put(i,{now:true});
+  ta.value="";UI.capEnvie=0;UI.renderCap();UI.renderSowChoices();UI.tab="jachere";UI.filt.jachere="tout";lsSet("novale.tab","jachere");UI.render();
+  toast(t("t_sown",frLong(i.dates.relire)));return true;
+}
+$("#capture").addEventListener("submit",e=>{e.preventDefault();sow($("#capText"),()=>$("#capDots .dot"))});
+$("#sowForm").addEventListener("submit",e=>{e.preventDefault();if(sow($("#sowText"),()=>$("#sowChoices button")))$("#sowDlg").close()});
+$("#sowText").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("#sowForm").requestSubmit()}});
+$("#sowDlg").addEventListener("click",e=>{if(e.target.id==="sowDlg")$("#sowDlg").close()});
+$("#optBtn").addEventListener("click",()=>{const o=$("#options"),b=$("#optBtn");o.hidden=!o.hidden;b.setAttribute("aria-expanded",String(!o.hidden));if(o.hidden&&UI.wipeStep){UI.wipeStep=0;UI.renderWipe()}});
+$("#setLang").addEventListener("change",e=>{LANG=e.target.value==="en"?"en":"fr";lsSet("novale.lang",LANG);Store.setPrefs({lang:LANG});UI.applyStatic();UI.render();if(UI.openId)UI.renderSheet(true)});
+$("#copyAllBtn").addEventListener("click",()=>{const all=Store.all();if(!all.length)return toast(t("t_empty"));copyText(all.map(i=>"<!-- "+fileName(i.titre)+".md -->\n"+toMd(i)).join("\n\n"),t("t_copiedAll",all.length))});
+$("#zipBtn").addEventListener("click",async()=>{
+  const all=Store.all();if(!all.length)return toast(t("t_empty"));
+  try{const JSZip=await loadJSZip();const z=new JSZip();const f=z.folder("Novale");const used=new Set();
+    all.forEach(i=>{let n=fileName(i.titre),k=n,c=2;while(used.has(k.toLowerCase()))k=n+" "+c++;used.add(k.toLowerCase());f.file(k+".md",toMd(i))});
+    f.file(t("dashFile")+".md",dashboard());f.file(t("tplDir")+"/"+t("tplFile")+".md",template());
+    const blob=await z.generateAsync({type:"blob"});if(await save("Novale-"+today()+".zip",blob))toast(t("t_unzip"));
+  }catch(e){toast(t("t_zipFail"))}
+});
+$("#importFile").addEventListener("change",async e=>{const files=[...e.target.files];if(!files.length)return;importMany(await Promise.all(files.map(f=>f.text())));e.target.value=""});
+$("#pasteBtn").addEventListener("click",()=>{UI.aux(`<div class="dhead"><span class="pill">${esc(t("pasteTitle"))}</span><button class="close" type="button" data-x aria-label="${esc(t("close"))}">×</button></div><p class="muted" style="margin:0">${esc(t("pasteP"))}</p><div class="copybox"><label for="pasteTa" class="sr">${esc(t("pasteTitle"))}</label><textarea id="pasteTa" placeholder="---&#10;id: …&#10;status: resting&#10;---&#10;# …"></textarea></div><div class="actions"><button class="btn primary small" type="button" id="pasteGo">${esc(t("importBtn"))}</button></div>`);$("#pasteTa").focus()});
+$("#auxBody").addEventListener("click",e=>{if(e.target.id==="pasteGo"){const v=$("#pasteTa").value.trim();if(!v)return;importMany(v.replace(/^<!--[^\n]*-->[ \t]*$/gm,"").trim().split(/\n(?=---\nid: )/).map(s=>s.trim()).filter(Boolean));$("#aux").close()}});
+$("#blankBtn").addEventListener("click",async()=>{
+  if(canSave()){if(await save(t("p_blankFile")+".html",ficheHtml([])))toast(t("t_print"))}
+  else copyText(ficheHtml([]),t("t_codeCopied"));
+});
+$("#setRest").addEventListener("change",e=>{Store.setPrefs({rest:+e.target.value});toast(t("t_restSet",e.target.value))});
+$("#setLimit").addEventListener("change",e=>{Store.setPrefs({limit:+e.target.value});UI.render()});
+window.matchMedia(COMPACT).addEventListener?.("change",()=>{if(!UI.openId)UI.renderToday();UI.renderAlerts();UI.renderList()});
+
+/* ---------- Démarrage ---------- */
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();UI.installEvt=e;UI.renderInstall()});
+window.addEventListener("appinstalled",()=>{UI.installEvt=null;UI.renderInstall()});
+function openFromHash(){if(location.hash==="#new"){history.replaceState(null,"",location.pathname+location.search);if(compact())UI.openSow();else $("#capText").focus()}}
+window.addEventListener("hashchange",openFromHash);
+UI.applyStatic();
+UI.render();
+Store.init().then(()=>{openFromHash();if(STANDALONE&&navigator.storage&&navigator.storage.persist&&Store.all().length)navigator.storage.persist().catch(()=>{});const p=Store.prefs.lang;if((p==="fr"||p==="en")&&p!==LANG&&!lsGet("novale.lang")){LANG=p;UI.applyStatic();UI.render()}});
+(async()=>{try{if(!STANDALONE){downloads=await claude.use("downloads");UI.render()}}catch(e){}})();
+})();
+</script>
+
+<script>
+if("serviceWorker" in navigator && /^https?:$/.test(location.protocol)){navigator.serviceWorker.register("sw.js").catch(()=>{})}
+</script>
+</body>
+</html>
