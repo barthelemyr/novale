@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.1 (2026-10-28)
+
+- Phones: the options panel now sits above the bottom bar and scrolls to its last line (the "About" text was hidden behind the bar).
+
 ## 1.0.0 (2026-10-28)
 
 First public version.

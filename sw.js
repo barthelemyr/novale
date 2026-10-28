@@ -1,6 +1,6 @@
 // Novale service worker: keeps the app available offline.
 // It only caches Novale's own files. It never sends your ideas anywhere.
-const CACHE = "novale-1.0.0";
+const CACHE = "novale-1.0.1";
 const FILES = ["./", "index.html", "manifest.webmanifest", "vendor/jszip.min.js",
   "icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png", "icons/apple-touch-icon.png"];
 
