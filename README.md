@@ -2,6 +2,10 @@
 
 **Write it down, let it rest, grow what holds.**
 
+### [▶ Open Novale](https://barthelemyr.github.io/novale/)
+
+Works in any browser, and installs on your phone or computer.
+
 Novale is an idea notebook that makes ideas rest before you start them. It is built for people who love new ideas and end up with too many half-started projects.
 
 *Novale* is Latin for a field left to rest, and for land cultivated for the first time: rest first, then a real start.
@@ -35,7 +39,7 @@ The logo is the cycle itself: four squares, like a field rotation. Three places 
 
 ## Use it
 
-- **Online:** open the GitHub Pages site of this repository.
+- **Online:** [https://barthelemyr.github.io/novale/](https://barthelemyr.github.io/novale/)
 - **As a file:** download `index.html` and open it in a browser. Installation and offline mode require the online version.
 
 ### Install it as an app

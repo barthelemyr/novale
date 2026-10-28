@@ -2,6 +2,10 @@
 
 **Semer, laisser reposer, cultiver ce qui tient.**
 
+### [▶ Ouvrir Novale](https://barthelemyr.github.io/novale/)
+
+Fonctionne dans tout navigateur et s'installe sur ton téléphone ou ton ordinateur.
+
 Novale est un carnet d'idées qui fait reposer les idées avant de les démarrer. Il s'adresse aux personnes qui aiment le neuf et finissent avec trop de projets à moitié commencés.
 
 En latin, *novale* désigne une terre en jachère, mais aussi une terre cultivée pour la première fois : le repos d'abord, puis un vrai départ.
@@ -35,7 +39,7 @@ Le logo, c'est le cycle lui-même : quatre carrés, comme un assolement. Trois p
 
 ## L'utiliser
 
-- **En ligne** : ouvre le site GitHub Pages de ce dépôt.
+- **En ligne** : [https://barthelemyr.github.io/novale/](https://barthelemyr.github.io/novale/)
 - **En fichier** : télécharge `index.html` et ouvre-le dans un navigateur. L'installation et le mode hors ligne demandent la version en ligne.
 
 ### L'installer comme une application

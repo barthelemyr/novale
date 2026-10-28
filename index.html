@@ -72,6 +72,7 @@ h1,h2,h3{margin:0;line-height:1.05;text-wrap:balance;letter-spacing:-.01em}
 .opt{display:flex;flex-direction:column;gap:10px;padding:16px 18px;border-top:1px solid var(--hair);border-left:1px solid var(--hair);min-width:0}
 .opt:nth-child(-n+2){border-top:0}.opt:nth-child(odd){border-left:0}
 .opt p{margin:0;color:var(--muted);font-size:14px}
+.opt a{color:var(--ink);text-underline-offset:3px}
 .opt .acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto}
 .opt select{min-height:38px;border:1px solid var(--line);background:var(--bg);padding:0 8px;border-radius:0}
 .opt .set{display:grid;grid-template-columns:auto 1fr;gap:8px 12px;align-items:center;font-size:14px}
@@ -407,6 +408,7 @@ fr:{
   w_1:n=>`Étape 1 sur 3. Tu vas supprimer ${n} idée${n>1?"s":""}, avec leurs dates, réponses et journaux. Cette action est définitive.`,w_1b:"Exporte d'abord vers Obsidian si tu veux garder une copie.",w_cont:"Je comprends, continuer",
   w_2:"Étape 2 sur 3. Rien ne pourra être récupéré, ni ici ni sur tes autres appareils.",w_cont2:"Oui, je veux tout effacer",
   w_3:w=>`Étape 3 sur 3. Pour confirmer, écris ${w} ci-dessous.`,w_word:"EFFACER",w_final:"Effacer définitivement",w_done:"Carnet effacé.",w_empty:"Le carnet est déjà vide.",w_input:"Mot de confirmation",
+  source:"Code source sur GitHub",
   i_title:"Installer l'application",i_p:"Novale s'ouvre alors comme une application, depuis ton écran d'accueil ou ton dock, et fonctionne hors ligne.",i_btn:"Installer Novale",i_done:"Novale est installé.",
   i_ios:"Sur iPhone ou iPad, dans Safari : touche Partager, puis « Sur l'écran d'accueil ».",i_other:"Dans le menu de ton navigateur, choisis « Installer l'application » ou « Ajouter à l'écran d'accueil ».",
   newIdea:"Nouvelle idée",today:"Aujourd'hui",about:"À propos",aboutP:v=>`Novale ${v} est un logiciel libre sous licence MIT. Il a été conçu avec l'aide de Claude, une IA d'Anthropic, sous la direction de son auteur. Aucune IA n'intervient pendant l'utilisation et Novale n'envoie aucune donnée.`,
@@ -474,6 +476,7 @@ en:{
   w_1:n=>`Step 1 of 3. You are about to delete ${n} idea${n>1?"s":""}, with their dates, answers and logs. This cannot be undone.`,w_1b:"Export to Obsidian first if you want to keep a copy.",w_cont:"I understand, continue",
   w_2:"Step 2 of 3. Nothing can be recovered, here or on your other devices.",w_cont2:"Yes, delete everything",
   w_3:w=>`Step 3 of 3. To confirm, type ${w} below.`,w_word:"DELETE",w_final:"Delete for good",w_done:"Notebook deleted.",w_empty:"The notebook is already empty.",w_input:"Confirmation word",
+  source:"Source code on GitHub",
   i_title:"Install the app",i_p:"Novale then opens like an app, from your home screen or dock, and works offline.",i_btn:"Install Novale",i_done:"Novale is installed.",
   i_ios:"On iPhone or iPad, in Safari: tap Share, then “Add to Home Screen”.",i_other:"In your browser menu, choose “Install app” or “Add to Home Screen”.",
   newIdea:"New idea",today:"Today",about:"About",aboutP:v=>`Novale ${v} is free software under the MIT licence. It was built with the help of Claude, an AI by Anthropic, under its author's direction. No AI runs while you use it and Novale sends no data.`,
@@ -804,7 +807,7 @@ const UI={
     document.querySelectorAll("[data-ph]").forEach(el=>{el.placeholder=t(el.dataset.ph)});
     document.querySelectorAll("[data-i-aria]").forEach(el=>{el.setAttribute("aria-label",t(el.dataset.iAria))});
     $("#logoBtn").setAttribute("aria-label","Novale · "+t("today"));$("#bnav").setAttribute("aria-label",t("tabsAria"));$("#sowChoices").setAttribute("aria-label",t("desire"));
-    $("#aboutP").textContent=t("aboutP",VERSION);this.renderSowChoices();this.renderWipe();this.renderInstall();
+    $("#aboutP").innerHTML=esc(t("aboutP",VERSION))+` <a href="https://github.com/barthelemyr/novale" target="_blank" rel="noopener">${esc(t("source"))}</a>`;this.renderSowChoices();this.renderWipe();this.renderInstall();
     $("#tabs").setAttribute("aria-label",t("tabsAria"));$("#detail").setAttribute("aria-label",t("detailAria"));$("#options").setAttribute("aria-label",t("options"));
     $("#setLang").value=LANG;
     const r=String(Store.prefs.rest);$("#setRest").innerHTML=[3,7,14,30].map(n=>`<option value="${n}">${esc(t("restOpt",n))}</option>`).join("");$("#setRest").value=r;
